@@ -21,7 +21,7 @@ public class MyClassPathBeanDefinitionScanner {
     public static void main(String[] args) {
         MyClassPathBeanDefinitionScanner scan=new MyClassPathBeanDefinitionScanner();
         try {
-            scan.scan("org.hxm.myspring");
+            scan.scan("com.hxm.myspring.test");
         }catch (IOException e){
             e.printStackTrace();
         }
@@ -52,23 +52,19 @@ public class MyClassPathBeanDefinitionScanner {
             result3.add(content);
         }
 
-        Set<Resource> result4 = new LinkedHashSet<>(result3.size());
         for (File file : result3) {
-            result4.add(new FileSystemResource(file));
+            result2.add(new FileSystemResource(file));
         }
-        result2.addAll(result4);
         Resource[] resources=result2.toArray(new Resource[0]);
         for (Resource resource : resources) {
             if (resource.isReadable()) {
                 // TODO: 2020/6/27 将resource封装成reader，检查reader是否有注解，再将reader封装成BeanDefinition
-//                System.out.println(resource.getFilename());
+                System.out.println(resource.getFilename());
 
 //                ClassVisitor classVisitor=new ClassVisitor(this.getClass().getClassLoader());
-////                SimpleAnnotationMetadataReadingVisitor visitor = new SimpleAnnotationMetadataReadingVisitor(classLoader);
-//                ClassReader classLoader=new ClassReader(resource.getInputStream());
-//                classLoader.accept(visitor, PARSING_OPTIONS);
-//                this.resource = resource;
-//                this.annotationMetadata = visitor.getMetadata();
+//                ClassReader classReader=new ClassReader(resource.getInputStream());
+//                classReader.accept(classVisitor, PARSING_OPTIONS);
+
 
             }
         }

@@ -15,7 +15,7 @@ public class Main {
         AnnotationConfigApplicationContext ctx= new AnnotationConfigApplicationContext("com.hxm.myspring.test");
         Dog dog=(Dog) ctx.getBean("dog");
         dog.say();
-
+//
 //        Class<?> clazz = Dog.class;
 //        Field[] result=clazz.getDeclaredFields();
 //        Field field=result[0];
