@@ -1,6 +1,6 @@
 package org.hxm.myspring.annotation;
 
-public class MyMergedAnnotation<A> {
+public class MyTypeMappedAnnotation<A>  {
 
     private final ClassLoader classLoader;
 
@@ -10,7 +10,7 @@ public class MyMergedAnnotation<A> {
 
     private final Object attributes;
 
-    public MyMergedAnnotation(ClassLoader classLoader, Object source, Class<A> annotationType, Object attributes) {
+    public MyTypeMappedAnnotation(ClassLoader classLoader, Object source, Class<A> annotationType, Object attributes) {
         this.classLoader = classLoader;
         this.source = source;
         this.annotationType = annotationType;

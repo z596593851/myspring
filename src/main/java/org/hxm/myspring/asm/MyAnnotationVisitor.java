@@ -1,7 +1,7 @@
 package org.hxm.myspring.asm;
 
 
-import org.hxm.myspring.annotation.MyMergedAnnotation;
+import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 
@@ -21,12 +21,12 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     private final Class<A> annotationType;
 
-    private final Consumer<MyMergedAnnotation<A>> consumer;
+    private final Consumer<MyTypeMappedAnnotation<A>> consumer;
 
     private final Map<String, Object> attributes = new LinkedHashMap<>(4);
 
 
-    public MyAnnotationVisitor(ClassLoader classLoader, Object source, Class<A> annotationType, Consumer<MyMergedAnnotation<A>> consumer) {
+    public MyAnnotationVisitor(ClassLoader classLoader, Object source, Class<A> annotationType, Consumer<MyTypeMappedAnnotation<A>> consumer) {
         super(ASM_VERSION);
         this.classLoader = classLoader;
         this.source = source;
@@ -34,7 +34,7 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
         this.consumer = consumer;
     }
 
-    static <A extends Annotation> AnnotationVisitor get(ClassLoader classLoader, Supplier<Object> sourceSupplier, String descriptor, boolean visible, Consumer<MyMergedAnnotation<A>> consumer) {
+    static <A extends Annotation> AnnotationVisitor get(ClassLoader classLoader, Supplier<Object> sourceSupplier, String descriptor, boolean visible, Consumer<MyTypeMappedAnnotation<A>> consumer) {
         if (!visible) {
             return null;
         }
@@ -61,7 +61,7 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     @Override
     public void visitEnd() {
-        MyMergedAnnotation<A> annotation = new MyMergedAnnotation<>(this.classLoader, this.source, this.annotationType, this.attributes);
+        MyTypeMappedAnnotation<A> annotation = new MyTypeMappedAnnotation<>(this.classLoader, this.source, this.annotationType, this.attributes);
         this.consumer.accept(annotation);
     }
 }

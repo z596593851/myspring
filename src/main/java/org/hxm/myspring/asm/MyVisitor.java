@@ -1,7 +1,7 @@
 package org.hxm.myspring.asm;
 
 
-import org.hxm.myspring.annotation.MyMergedAnnotation;
+import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
 import org.objectweb.asm.*;
 
 import java.util.ArrayList;
@@ -31,9 +31,11 @@ public class MyVisitor extends ClassVisitor {
 
     private Set<String> memberClassNames = new LinkedHashSet<>(4);
 
-    private List<MyMergedAnnotation<?>> annotations = new ArrayList<>();
+    private List<MyTypeMappedAnnotation<?>> annotations = new ArrayList<>();
 
     private Source source;
+
+    private MyAnnotationMetadata metadata;
 
     public MyVisitor(ClassLoader classLoader){
         super(ASM_VERSION);
@@ -124,7 +126,9 @@ public class MyVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        super.visitEnd();
+        this.metadata = new MyAnnotationMetadata(this.className, this.access,
+                this.enclosingClassName, this.superClassName, this.independentInnerClass,
+                this.interfaceNames, memberClassNames, annotations);
     }
 
     public String toClassName(String name){
@@ -135,6 +139,9 @@ public class MyVisitor extends ClassVisitor {
         return (access & org.springframework.asm.Opcodes.ACC_INTERFACE) != 0;
     }
 
+    public MyAnnotationMetadata getMetadata(){
+        return metadata;
+    }
 
 
 

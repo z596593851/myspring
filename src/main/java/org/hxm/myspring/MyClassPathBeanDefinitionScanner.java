@@ -1,12 +1,9 @@
 package org.hxm.myspring;
 
-import org.springframework.asm.ClassReader;
-import org.springframework.asm.ClassVisitor;
+import org.hxm.myspring.asm.MyMetadataReader;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-
-import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +12,7 @@ import java.util.*;
 
 public class MyClassPathBeanDefinitionScanner {
 
-    private static final int PARSING_OPTIONS = ClassReader.SKIP_DEBUG
-            | ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
+
 
     public static void main(String[] args) {
         MyClassPathBeanDefinitionScanner scan=new MyClassPathBeanDefinitionScanner();
@@ -34,7 +30,8 @@ public class MyClassPathBeanDefinitionScanner {
         }
     }
 
-    public void scanCandidateComponents(String basePackage) throws IOException {
+    public Set<MyBeanDefinition> scanCandidateComponents(String basePackage) throws IOException {
+        Set<MyBeanDefinition> candidates = new LinkedHashSet<>();
         Set<Resource> result1 = new LinkedHashSet<>(16);
         ClassLoader cl = this.getClass().getClassLoader();
         basePackage=basePackage.replace(".","/")+"/";
@@ -59,15 +56,14 @@ public class MyClassPathBeanDefinitionScanner {
         for (Resource resource : resources) {
             if (resource.isReadable()) {
                 // TODO: 2020/6/27 将resource封装成reader，检查reader是否有注解，再将reader封装成BeanDefinition
-                System.out.println(resource.getFilename());
-
-//                ClassVisitor classVisitor=new ClassVisitor(this.getClass().getClassLoader());
-//                ClassReader classReader=new ClassReader(resource.getInputStream());
-//                classReader.accept(classVisitor, PARSING_OPTIONS);
-
-
+//                System.out.println(resource.getFilename());
+                MyMetadataReader metadataReader=new MyMetadataReader(resource);
+                MyBeanDefinition mbd=new MyBeanDefinition(metadataReader);
+                mbd.setSource(resource);
+                candidates.add(mbd);
             }
         }
+        return candidates;
 
 
     }
