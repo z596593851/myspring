@@ -14,15 +14,17 @@ public class MyBeanDefinition {
 
     private Resource resource;
 
-    private final MyAnnotationMetadata metadata;
+    private MyAnnotationMetadata metadata;
 
-//    Executable resolvedConstructorOrFactoryMethod;
-//
-//    volatile Class<?> resolvedTargetType;
-//
-//    public Class<?> getBeanClass(){
-//        return null;
-//    }
+    Executable resolvedConstructorOrFactoryMethod;
+
+    volatile Class<?> resolvedTargetType;
+
+    public Class<?> getBeanClass(){
+        return null;
+    }
+
+    public MyBeanDefinition(){}
 
     public MyBeanDefinition(MyMetadataReader metadataReader){
         this.metadata=metadataReader.getAnnotationMetadata();

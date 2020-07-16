@@ -15,7 +15,9 @@ public class MyBeanFactory {
 
     private static final Map<Class<?>, Object> DEFAULT_TYPE_VALUES;
 
-    private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
+    private Map<String,MyBeanDefinition> beanDefinitionMap = new HashMap<>();
+
+    private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
 
     private List<MyBeanPostProcessor> beanPostProcessors=new ArrayList<>();
 
@@ -128,5 +130,9 @@ public class MyBeanFactory {
 
     public List<MyBeanPostProcessor> getBeanPostProcessors() {
         return this.beanPostProcessors;
+    }
+
+    public void registerBeanDefinition(String beanName, MyBeanDefinition beanDefinition){
+        this.beanDefinitionMap.put(beanName,beanDefinition);
     }
 }
