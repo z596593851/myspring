@@ -1,8 +1,8 @@
 package org.hxm.myspring;
 
-import org.springframework.beans.PropertyValues;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.hxm.myspring.annotation.MyAutowired;
+import org.hxm.myspring.annotation.MyValue;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
@@ -16,8 +16,8 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
 
     public MyAutowiredProcessor() {
         //AutowiredAnnotationBeanPostProcessor只处理@Value和@Autowired注解
-        this.autowiredAnnotationTypes.add(Autowired.class);
-        this.autowiredAnnotationTypes.add(Value.class);
+        this.autowiredAnnotationTypes.add(MyAutowired.class);
+        this.autowiredAnnotationTypes.add(MyValue.class);
     }
 
 

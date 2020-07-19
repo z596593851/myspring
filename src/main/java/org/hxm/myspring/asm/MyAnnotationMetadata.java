@@ -5,7 +5,10 @@ import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.type.MethodMetadata;
 import org.springframework.lang.Nullable;
 
+import java.lang.annotation.Annotation;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MyAnnotationMetadata {
@@ -25,11 +28,12 @@ public class MyAnnotationMetadata {
 
     private Set<String> memberClassNames;
 
-    private List<MyTypeMappedAnnotation<?>> annotations;
+    //一个类里的所有注解
+    private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
     public MyAnnotationMetadata(String className, int access, @Nullable String enclosingClassName,
                                 @Nullable String superClassName, boolean independentInnerClass, String[] interfaceNames,
-                                Set<String> memberClassNames, List<MyTypeMappedAnnotation<?>> annotations){
+                                Set<String> memberClassNames, List<MyTypeMappedAnnotation<Annotation>> annotations){
         this.className = className;
         this.access = access;
         this.enclosingClassName = enclosingClassName;
@@ -43,5 +47,21 @@ public class MyAnnotationMetadata {
 
     public String getClassName(){
         return this.className;
+    }
+
+    public List<MyTypeMappedAnnotation<Annotation>> getAnnotations(){
+        return this.annotations;
+    }
+
+    public Map<String, Object> getAnnotationAttributes(Class<?> annotationClass){
+        Object requiredType=annotationClass.getName();
+        for(MyTypeMappedAnnotation<Annotation> myTypeMappedAnnotation:annotations){
+            Class<? extends Annotation> actualType = myTypeMappedAnnotation.getAnnotationType();
+            if(actualType==requiredType || actualType.getName().equals(requiredType)){
+                Map<String, Object> map=(Map<String, Object>)myTypeMappedAnnotation.getAttributes();
+                return map;
+            }
+        }
+        return null;
     }
 }

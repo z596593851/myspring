@@ -20,6 +20,20 @@ public class MyBeanDefinition {
 
     volatile Class<?> resolvedTargetType;
 
+    private String scope = "";
+
+    public String getScope() {
+        return scope;
+    }
+
+    public void setScope(String scope) {
+        this.scope = scope;
+    }
+
+    public boolean isSingleton() {
+        return "singleton".equals(this.scope) || "".equals(this.scope);
+    }
+
     public Class<?> getBeanClass(){
         return null;
     }

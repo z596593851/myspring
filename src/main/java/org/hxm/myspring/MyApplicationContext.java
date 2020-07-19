@@ -30,7 +30,13 @@ public class MyApplicationContext {
     }
 
     protected void finishBeanFactoryInitialization(MyBeanFactory beanFactory){
-
+        try {
+            beanFactory.preInstantiateSingletons();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
+
 
 }

@@ -3,6 +3,7 @@ package org.hxm.myspring;
 
 import org.hxm.myspring.function.MyObjectFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.BeanDefinition;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -16,6 +17,8 @@ public class MyBeanFactory {
     private static final Map<Class<?>, Object> DEFAULT_TYPE_VALUES;
 
     private Map<String,MyBeanDefinition> beanDefinitionMap = new HashMap<>();
+
+    private volatile List<String> beanDefinitionNames = new ArrayList<>();
 
     private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
 
@@ -134,5 +137,20 @@ public class MyBeanFactory {
 
     public void registerBeanDefinition(String beanName, MyBeanDefinition beanDefinition){
         this.beanDefinitionMap.put(beanName,beanDefinition);
+        this.beanDefinitionNames.add(beanName);
+    }
+
+    public MyBeanDefinition getBeanDefinition(String beanName){
+        return this.beanDefinitionMap.get(beanName);
+    }
+
+    public void preInstantiateSingletons() throws Exception{
+        List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
+        for (String beanName : beanNames) {
+            MyBeanDefinition mbd=this.beanDefinitionMap.get(beanName);
+            if(mbd.isSingleton()){
+                getBean(beanName);
+            }
+        }
     }
 }

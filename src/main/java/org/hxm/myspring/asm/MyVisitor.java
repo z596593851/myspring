@@ -4,6 +4,7 @@ package org.hxm.myspring.asm;
 import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
 import org.objectweb.asm.*;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,7 +32,7 @@ public class MyVisitor extends ClassVisitor {
 
     private Set<String> memberClassNames = new LinkedHashSet<>(4);
 
-    private List<MyTypeMappedAnnotation<?>> annotations = new ArrayList<>();
+    private List<MyTypeMappedAnnotation<Annotation>> annotations = new ArrayList<>();
 
     private Source source;
 
@@ -102,26 +103,6 @@ public class MyVisitor extends ClassVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
-    }
-
-    @Override
-    public AnnotationVisitor visitTypeAnnotation(int i, TypePath typePath, String s, boolean b) {
-        return super.visitTypeAnnotation(i, typePath, s, b);
-    }
-
-    @Override
-    public void visitAttribute(Attribute attribute) {
-        super.visitAttribute(attribute);
-    }
-
-    @Override
-    public FieldVisitor visitField(int i, String s, String s1, String s2, Object o) {
-        return super.visitField(i, s, s1, s2, o);
-    }
-
-    @Override
-    public MethodVisitor visitMethod(int i, String s, String s1, String s2, String[] strings) {
-        return super.visitMethod(i, s, s1, s2, strings);
     }
 
     @Override

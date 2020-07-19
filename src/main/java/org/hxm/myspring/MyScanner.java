@@ -1,7 +1,9 @@
 package org.hxm.myspring;
 
+import org.hxm.myspring.annotation.MyScopeMetadata;
 import org.hxm.myspring.asm.MyMetadataReader;
 import org.hxm.myspring.utils.MyBeanNameGenerator;
+import org.hxm.myspring.utils.MyMetadataResolver;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -17,17 +19,20 @@ public class MyScanner {
 
     private MyBeanNameGenerator beanNameGenerator=new MyBeanNameGenerator();
 
+    private MyMetadataResolver myMetadataResolver = new MyMetadataResolver();
+
     public MyScanner(MyApplicationContext registry){
         this.registry=registry;
     }
 
     public void scan(String... basePackages) {
         for (String basePackage : basePackages) {
-            Set<MyBeanDefinition> candidates=scanCandidateComponents(basePackage);
+            Set<MyBeanDefinition> candidates=scanCandidateComponents(basePackage) ;
             for(MyBeanDefinition candidate:candidates){
-                String beanName=beanNameGenerator.generateBeanName(candidate,this.registry);
+                String beanName=beanNameGenerator.generateBeanName(candidate);
+                MyScopeMetadata scopeMetadata=this.myMetadataResolver.resolveScopeMetadata(candidate);
+                candidate.setScope(scopeMetadata.getScopeName());
                 this.registry.registerBeanDefinition(beanName,candidate);
-
             }
         }
     }
