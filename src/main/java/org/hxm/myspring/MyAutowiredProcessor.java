@@ -34,9 +34,7 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
     }
 
     public MyInjectionMetadata buildAutowiringMetadata(Class<?> clazz) throws Exception{
-        if (!isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
-            return MyInjectionMetadata.EMPTY;
-        }
+        //拿到一个类的所有成员的注解（仅限于@MyAutowired和@MyValue）
         List<MyInjectionMetadata.MyInjectedElement> elements = new ArrayList<>();
         Field[] result=clazz.getDeclaredFields();
         for(Field field:result){
@@ -78,20 +76,19 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         return null;
     }
 
-    private boolean isCandidateClass(Class<?> clazz, Collection<Class<? extends Annotation>> annotationTypes){
-        for (Class<? extends Annotation> annotationType : annotationTypes) {
-            String annotationName=annotationType.getName();
-            if (annotationName.startsWith("java.")) {
-                return true;
-            }
-            if (clazz.getName().startsWith("java.")) {
-                return false;
-            }
-            return true;
-        }
-        return false;
-
-    }
+//    private boolean isCandidateClass(Class<?> clazz, Collection<Class<? extends Annotation>> annotationTypes){
+//        for (Class<? extends Annotation> annotationType : annotationTypes) {
+//            String annotationName=annotationType.getName();
+//            if (annotationName.startsWith("java.")) {
+//                return true;
+//            }
+//            if (clazz.getName().startsWith("java.")) {
+//                return false;
+//            }
+//            return true;
+//        }
+//        return false;
+//    }
 
     public static void main(String[] args) throws Exception {
 //        MyAutowiredProcessor processor=new MyAutowiredProcessor();

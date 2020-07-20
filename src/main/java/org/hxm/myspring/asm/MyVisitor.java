@@ -10,6 +10,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.objectweb.asm.Opcodes.ASM4;
+
 public class MyVisitor extends ClassVisitor {
 
     private final ClassLoader classLoader;
@@ -39,7 +41,8 @@ public class MyVisitor extends ClassVisitor {
     private MyAnnotationMetadata metadata;
 
     public MyVisitor(ClassLoader classLoader){
-        super(ASM_VERSION);
+//        super(ASM_VERSION);
+        super(ASM4);
         this.classLoader = classLoader;
     }
 
@@ -100,8 +103,10 @@ public class MyVisitor extends ClassVisitor {
         super.visitSource(s, s1);
     }
 
+
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        System.out.println(descriptor);
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }
 

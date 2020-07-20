@@ -35,6 +35,7 @@ public class MyBeanDefinition {
     }
 
     public Class<?> getBeanClass(){
+        //todo bug
         return null;
     }
 

@@ -1,9 +1,11 @@
 package org.hxm.myspring;
 
 
+import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.function.MyObjectFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -39,9 +41,11 @@ public class MyBeanFactory {
     }
 
     public Object getBean(String beanName) throws Exception{
-//        final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+        MyBeanDefinition mbd = getBeanDefinition(beanName);
+        if(mbd==null){
+            throw new Exception(String.format("没有名为%s的beanDefinition",beanName));
+        }
         try {
-            MyBeanDefinition mbd=new MyBeanDefinition();
             Object bean=getSingleton(beanName,()->{
                 try {
                     return createBean(beanName,mbd);
@@ -58,10 +62,12 @@ public class MyBeanFactory {
     public Object createBean(String beanName,MyBeanDefinition mbd) throws Exception{
         Object bean = this.singletonObjects.get(beanName);
         if(bean==null){
+            //bean的实例化
             bean=createBeanInstance(beanName,mbd);
             Class<?> beanType=bean.getClass();
             mbd.resolvedTargetType = beanType;
             try {
+                //属性注入
                 populateBean(beanName,mbd,bean);
             }catch (Throwable ex){
                 ex.printStackTrace();
@@ -87,6 +93,7 @@ public class MyBeanFactory {
     public Object createBeanInstance(String beanName, MyBeanDefinition mbd,Object... args) throws Exception {
         Constructor<?> constructorToUse= (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
         if (constructorToUse == null) {
+            //todo bug
             Class<?> clazz = mbd.getBeanClass();
             constructorToUse = clazz.getDeclaredConstructor();
             mbd.resolvedConstructorOrFactoryMethod = constructorToUse;
@@ -106,17 +113,15 @@ public class MyBeanFactory {
     }
 
     public Object resolveDependency(String beanName, Field field, Set<String> autowiredBeanNames) throws Throwable {
-
         Annotation[] fieldAnnotations=field.getAnnotations();
         Annotation ann=fieldAnnotations[0];
-        if(ann.annotationType()!= Value.class){
-            return null;
-        }
-        Method[] methods = ann.annotationType().getDeclaredMethods();
-        Method me=methods[0];
-        Object value=me.invoke(ann,null);
-        if(value!=null){
-            return value;
+        if(ann.annotationType()== MyValue.class) {
+            Method[] methods = ann.annotationType().getDeclaredMethods();
+            Method me = methods[0];
+            Object value = me.invoke(ann, null);
+            if (value != null) {
+                return value;
+            }
         }
         return getBean(beanName);
 
@@ -126,6 +131,7 @@ public class MyBeanFactory {
        if(bean==null){
            return;
        }
+       //执行所有InstantiationAwareBeanPostProcessor的postProcessProperties方法
        for(MyBeanPostProcessor beanPostProcessor:getBeanPostProcessors()){
            beanPostProcessor.postProcessProperties(bean,beanName);
        }

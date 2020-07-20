@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static org.objectweb.asm.Opcodes.ASM4;
+
 public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor {
 
     private static int ASM_VERSION  = 1 << 24 | 8 << 16 | 0 << 8;
@@ -27,13 +29,16 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
 
     public MyAnnotationVisitor(ClassLoader classLoader, Object source, Class<A> annotationType, Consumer<MyTypeMappedAnnotation<A>> consumer) {
-        super(ASM_VERSION);
+        super(ASM4);
         this.classLoader = classLoader;
         this.source = source;
         this.annotationType = annotationType;
         this.consumer = consumer;
     }
 
+    /**
+     * 工厂方法，返回AnnotationVisitor的实例
+     */
     static <A extends Annotation> AnnotationVisitor get(ClassLoader classLoader, Supplier<Object> sourceSupplier, String descriptor, boolean visible, Consumer<MyTypeMappedAnnotation<A>> consumer) {
         if (!visible) {
             return null;

@@ -28,7 +28,7 @@ public class MyAnnotationMetadata {
 
     private Set<String> memberClassNames;
 
-    //一个类里的所有注解
+    //一个类的类上标注的所有注解,如compoment,scope
     private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
     public MyAnnotationMetadata(String className, int access, @Nullable String enclosingClassName,

@@ -6,6 +6,9 @@ public class MyTypeMappedAnnotation<A>  {
 
     private final Object source;
 
+    //一个注解对应的key-value
+    private final Object attributes;
+
     public Class<A> getAnnotationType() {
         return annotationType;
     }
@@ -15,9 +18,6 @@ public class MyTypeMappedAnnotation<A>  {
     public Object getAttributes() {
         return attributes;
     }
-
-    //一个注解对应的key-value
-    private final Object attributes;
 
     public MyTypeMappedAnnotation(ClassLoader classLoader, Object source, Class<A> annotationType, Object attributes) {
         this.classLoader = classLoader;

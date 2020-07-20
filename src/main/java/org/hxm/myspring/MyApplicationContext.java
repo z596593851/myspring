@@ -11,6 +11,7 @@ public class MyApplicationContext {
     }
 
     public MyApplicationContext(String... basePackages){
+        this();
         scan(basePackages);
     }
 
@@ -35,6 +36,10 @@ public class MyApplicationContext {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public Object getBean(String beanName) throws Exception{
+       return this.beanFactory.getBean(beanName);
     }
 
 
