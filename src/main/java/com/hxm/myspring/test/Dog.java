@@ -10,7 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Scope("prototype")
 public class Dog {
 
     @Value("wang wang")

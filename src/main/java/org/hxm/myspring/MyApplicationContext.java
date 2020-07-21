@@ -26,6 +26,7 @@ public class MyApplicationContext {
 
     public void refresh(){
         //省略一些方法
+        invokeBeanFactoryPostProcessors(beanFactory);
         finishBeanFactoryInitialization(beanFactory);
 
     }
@@ -36,6 +37,10 @@ public class MyApplicationContext {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
+        beanFactory.getBeanNamesForType();
     }
 
     public Object getBean(String beanName) throws Exception{

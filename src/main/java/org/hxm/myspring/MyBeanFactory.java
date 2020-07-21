@@ -3,9 +3,11 @@ package org.hxm.myspring;
 
 import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.function.MyObjectFactory;
+import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -15,6 +17,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MyBeanFactory {
+
+    private ClassLoader beanClassLoader= MyClassUtil.getDefaultClassLoader();
 
     private static final Map<Class<?>, Object> DEFAULT_TYPE_VALUES;
 
@@ -37,7 +41,7 @@ public class MyBeanFactory {
     }
 
     public MyBeanFactory(){
-        beanPostProcessors.add(new MyAutowiredProcessor());
+        beanPostProcessors.add(new MyAutowiredProcessor(this));
     }
 
     public Object getBean(String beanName) throws Exception{
@@ -157,6 +161,22 @@ public class MyBeanFactory {
             if(mbd.isSingleton()){
                 getBean(beanName);
             }
+        }
+    }
+
+    public ClassLoader getBeanClassLoader() {
+        return this.beanClassLoader;
+    }
+
+    public void getBeanNamesForType() {
+        try {
+            for(String beanName:beanDefinitionNames){
+                MyBeanDefinition beanDefinition=getBeanDefinition(beanName);
+    //            Class<?> resolvedClass = MyClassUtil.forName(, classLoader);
+                beanDefinition.resolveBeanClass(getBeanClassLoader());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

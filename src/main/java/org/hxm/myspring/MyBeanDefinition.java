@@ -3,6 +3,8 @@ package org.hxm.myspring;
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.asm.MyMetadataReader;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Executable;
 
@@ -11,6 +13,8 @@ public class MyBeanDefinition {
     private Object source;
 
     private String beanClassName;
+
+    private Object beanClass;
 
     private Resource resource;
 
@@ -35,8 +39,7 @@ public class MyBeanDefinition {
     }
 
     public Class<?> getBeanClass(){
-        //todo bug
-        return null;
+        return (Class<?>)beanClass;
     }
 
     public MyBeanDefinition(){}
@@ -73,5 +76,19 @@ public class MyBeanDefinition {
 
     public void setSource(Object source) {
         this.source = source;
+    }
+
+    public boolean hasBeanClass() {
+        return (this.beanClass instanceof Class);
+    }
+
+    public Class<?> resolveBeanClass(ClassLoader classLoader) throws Exception{
+        String className = getBeanClassName();
+        if (className == null) {
+            return null;
+        }
+        Class<?> resolvedClass = ClassUtils.forName(className.replace("/","."), classLoader);
+        this.beanClass = resolvedClass;
+        return resolvedClass;
     }
 }

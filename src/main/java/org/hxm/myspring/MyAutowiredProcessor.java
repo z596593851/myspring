@@ -20,6 +20,11 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         this.autowiredAnnotationTypes.add(MyValue.class);
     }
 
+    public MyAutowiredProcessor(MyBeanFactory beanFactory){
+        this();
+        this.beanFactory=beanFactory;
+    }
+
 
     public void setBeanFactory(MyBeanFactory beanFactory){
         this.beanFactory=beanFactory;
