@@ -1,6 +1,8 @@
 package com.hxm.myspring.mybean;
 
 import org.hxm.myspring.annotation.MyValue;
+import org.springframework.context.annotation.Configuration;
+
 
 public class Man {
 

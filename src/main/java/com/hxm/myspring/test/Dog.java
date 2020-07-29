@@ -1,22 +1,19 @@
 package com.hxm.myspring.test;
 
-import org.hxm.myspring.annotation.MyAutowired;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
-import org.springframework.core.annotation.AliasFor;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration
 public class Dog {
 
     @Value("wang wang")
     String content;
 
-    @MyAutowired
-    People people;
+    @Bean
+    public Me getMe(){
+        return new Me();
+    }
 
     public void say(){
         System.out.println(content);

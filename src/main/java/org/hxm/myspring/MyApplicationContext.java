@@ -1,5 +1,11 @@
 package org.hxm.myspring;
 
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
+
+import java.util.Collection;
+import java.util.List;
+
 public class MyApplicationContext {
     private MyScanner scanner;
 
@@ -41,6 +47,17 @@ public class MyApplicationContext {
 
     protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
         beanFactory.getBeanNamesForType();
+        List<MyBeanFactoryPostProcessor> currentRegistryProcessors=beanFactory.getBeanFactoryPostProcessor();
+        invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors,beanFactory);
+
+    }
+
+    private void invokeBeanDefinitionRegistryPostProcessors(
+            Collection<? extends MyBeanFactoryPostProcessor> postProcessors, MyBeanFactory registry) {
+
+        for (MyBeanFactoryPostProcessor postProcessor : postProcessors) {
+            postProcessor.postProcessBeanDefinitionRegistry(registry);
+        }
     }
 
     public Object getBean(String beanName) throws Exception{

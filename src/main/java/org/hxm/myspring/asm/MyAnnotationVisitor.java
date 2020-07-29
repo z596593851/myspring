@@ -1,7 +1,6 @@
 package org.hxm.myspring.asm;
 
 
-import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 
@@ -25,6 +24,7 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     private final Consumer<MyTypeMappedAnnotation<A>> consumer;
 
+    //一个注解的所有key-value
     private final Map<String, Object> attributes = new LinkedHashMap<>(4);
 
 

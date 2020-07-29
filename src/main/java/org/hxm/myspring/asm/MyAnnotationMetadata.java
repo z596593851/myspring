@@ -1,12 +1,6 @@
 package org.hxm.myspring.asm;
 
-import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
-import org.springframework.core.annotation.MergedAnnotations;
-import org.springframework.core.type.MethodMetadata;
-import org.springframework.lang.Nullable;
-
 import java.lang.annotation.Annotation;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,10 +10,8 @@ public class MyAnnotationMetadata {
 
     private final int access;
 
-    @Nullable
     private final String enclosingClassName;
 
-    @Nullable
     private final String superClassName;
 
     private final boolean independentInnerClass;
@@ -28,11 +20,11 @@ public class MyAnnotationMetadata {
 
     private Set<String> memberClassNames;
 
-    //一个类的类上标注的所有注解,如compoment,scope
+    //一个类/方法上标注的所有注解,如compoment,scope,bean
     private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
-    public MyAnnotationMetadata(String className, int access, @Nullable String enclosingClassName,
-                                @Nullable String superClassName, boolean independentInnerClass, String[] interfaceNames,
+    public MyAnnotationMetadata(String className, int access, String enclosingClassName,
+                                String superClassName, boolean independentInnerClass, String[] interfaceNames,
                                 Set<String> memberClassNames, List<MyTypeMappedAnnotation<Annotation>> annotations){
         this.className = className;
         this.access = access;
@@ -63,5 +55,16 @@ public class MyAnnotationMetadata {
             }
         }
         return null;
+    }
+
+    public boolean hasAnnotation(Object requiredType) {
+        for(MyTypeMappedAnnotation<?> annotation:this.annotations){
+            Class<?> type = annotation.getAnnotationType();
+            if (type == requiredType || type.getName().equals(requiredType)) {
+                return true;
+            }
+        }
+        return false;
+
     }
 }

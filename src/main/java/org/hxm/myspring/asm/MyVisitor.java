@@ -1,7 +1,6 @@
 package org.hxm.myspring.asm;
 
 
-import org.hxm.myspring.annotation.MyTypeMappedAnnotation;
 import org.objectweb.asm.*;
 
 import java.lang.annotation.Annotation;
@@ -34,6 +33,7 @@ public class MyVisitor extends ClassVisitor {
 
     private Set<String> memberClassNames = new LinkedHashSet<>(4);
 
+    //一个类上标注的所有注解
     private List<MyTypeMappedAnnotation<Annotation>> annotations = new ArrayList<>();
 
     private Source source;
@@ -106,7 +106,6 @@ public class MyVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        System.out.println(descriptor);
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }
 

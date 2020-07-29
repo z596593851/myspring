@@ -4,10 +4,6 @@ package org.hxm.myspring;
 import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.function.MyObjectFactory;
 import org.hxm.myspring.utils.MyClassUtil;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -30,6 +26,8 @@ public class MyBeanFactory {
 
     private List<MyBeanPostProcessor> beanPostProcessors=new ArrayList<>();
 
+    private List<MyBeanFactoryPostProcessor> beanFactoryPostProcessors=new ArrayList<>();
+
     static {
         Map<Class<?>, Object> values = new HashMap<>();
         values.put(boolean.class, false);
@@ -42,6 +40,7 @@ public class MyBeanFactory {
 
     public MyBeanFactory(){
         beanPostProcessors.add(new MyAutowiredProcessor(this));
+        beanFactoryPostProcessors.add(new MyConfigurationClassPostProcessor());
     }
 
     public Object getBean(String beanName) throws Exception{
@@ -97,7 +96,6 @@ public class MyBeanFactory {
     public Object createBeanInstance(String beanName, MyBeanDefinition mbd,Object... args) throws Exception {
         Constructor<?> constructorToUse= (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
         if (constructorToUse == null) {
-            //todo bug
             Class<?> clazz = mbd.getBeanClass();
             constructorToUse = clazz.getDeclaredConstructor();
             mbd.resolvedConstructorOrFactoryMethod = constructorToUse;
@@ -172,11 +170,14 @@ public class MyBeanFactory {
         try {
             for(String beanName:beanDefinitionNames){
                 MyBeanDefinition beanDefinition=getBeanDefinition(beanName);
-    //            Class<?> resolvedClass = MyClassUtil.forName(, classLoader);
                 beanDefinition.resolveBeanClass(getBeanClassLoader());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public List<MyBeanFactoryPostProcessor>getBeanFactoryPostProcessor(){
+        return this.beanFactoryPostProcessors;
     }
 }

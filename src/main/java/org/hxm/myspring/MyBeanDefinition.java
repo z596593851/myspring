@@ -2,9 +2,8 @@ package org.hxm.myspring;
 
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.asm.MyMetadataReader;
+import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
-import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Executable;
 
@@ -87,7 +86,7 @@ public class MyBeanDefinition {
         if (className == null) {
             return null;
         }
-        Class<?> resolvedClass = ClassUtils.forName(className.replace("/","."), classLoader);
+        Class<?> resolvedClass = MyClassUtil.forName(className.replace("/","."), classLoader);
         this.beanClass = resolvedClass;
         return resolvedClass;
     }
