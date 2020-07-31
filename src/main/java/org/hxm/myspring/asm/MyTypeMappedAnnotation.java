@@ -6,14 +6,14 @@ public class MyTypeMappedAnnotation<A>  {
 
     private final Object source;
 
-    //一个注解对应的key-value
+    //一个注解对应的key-value，可以是类上的注解也可以是方法上的
     private final Object attributes;
 
     public Class<A> getAnnotationType() {
         return annotationType;
     }
 
-    private final Class<A> annotationType;
+    private Class<A> annotationType;
 
     public Object getAttributes() {
         return attributes;

@@ -40,7 +40,7 @@ public class MyInjectionMetadata {
         protected void inject(Object bean,  String beanName) throws Throwable{}
     }
 
-    protected void inject(Object bean,  String beanName) throws Throwable{
+    public void inject(Object bean, String beanName) throws Throwable{
 
         Collection<MyInjectedElement> checkedElements = this.checkedElements;
         Collection<MyInjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);

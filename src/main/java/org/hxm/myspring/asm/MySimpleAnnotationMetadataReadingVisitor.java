@@ -1,7 +1,10 @@
 package org.hxm.myspring.asm;
 
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -11,7 +14,7 @@ import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM4;
 
-public class MyVisitor extends ClassVisitor {
+public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
     private final ClassLoader classLoader;
 
@@ -36,11 +39,14 @@ public class MyVisitor extends ClassVisitor {
     //一个类上标注的所有注解
     private List<MyTypeMappedAnnotation<Annotation>> annotations = new ArrayList<>();
 
+    //一个类里所有方法上的注解
+    private List<MyMethodMetadata> annotatedMethods = new ArrayList<>();
+
     private Source source;
 
-    private MyAnnotationMetadata metadata;
+    private MySimpleAnnotationMetadata metadata;
 
-    public MyVisitor(ClassLoader classLoader){
+    public MySimpleAnnotationMetadataReadingVisitor(ClassLoader classLoader){
 //        super(ASM_VERSION);
         super(ASM4);
         this.classLoader = classLoader;
@@ -76,7 +82,7 @@ public class MyVisitor extends ClassVisitor {
             if (obj == null || getClass() != obj.getClass()) {
                 return false;
             }
-            return this.className.equals(((MyVisitor.Source) obj).className);
+            return this.className.equals(((MySimpleAnnotationMetadataReadingVisitor.Source) obj).className);
         }
 
         @Override
@@ -110,10 +116,23 @@ public class MyVisitor extends ClassVisitor {
     }
 
     @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        if (isBridge(access)) {
+            return null;
+        }
+        return new MyMethodVisitor(this.classLoader, this.className,
+                access, name, descriptor, this.annotatedMethods::add);
+    }
+
+    @Override
     public void visitEnd() {
-        this.metadata = new MyAnnotationMetadata(this.className, this.access,
+        this.metadata = new MySimpleAnnotationMetadata(this.className, this.access,
                 this.enclosingClassName, this.superClassName, this.independentInnerClass,
-                this.interfaceNames, memberClassNames, annotations);
+                this.interfaceNames, memberClassNames, annotations, annotatedMethods);
+    }
+
+    private boolean isBridge(int access) {
+        return (access & Opcodes.ACC_BRIDGE) != 0;
     }
 
     public String toClassName(String name){
@@ -124,7 +143,7 @@ public class MyVisitor extends ClassVisitor {
         return (access & org.springframework.asm.Opcodes.ACC_INTERFACE) != 0;
     }
 
-    public MyAnnotationMetadata getMetadata(){
+    public MySimpleAnnotationMetadata getMetadata(){
         return metadata;
     }
 

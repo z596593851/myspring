@@ -1,11 +1,11 @@
 package org.hxm.myspring.asm;
 
-import java.lang.annotation.Annotation;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import org.springframework.core.type.MethodMetadata;
 
-public class MyAnnotationMetadata {
+import java.lang.annotation.Annotation;
+import java.util.*;
+
+public class MySimpleAnnotationMetadata {
     private final String className;
 
     private final int access;
@@ -20,12 +20,15 @@ public class MyAnnotationMetadata {
 
     private Set<String> memberClassNames;
 
-    //一个类/方法上标注的所有注解,如compoment,scope,bean
+    //一个类上标注的所有注解,如compoment,scope
     private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
-    public MyAnnotationMetadata(String className, int access, String enclosingClassName,
-                                String superClassName, boolean independentInnerClass, String[] interfaceNames,
-                                Set<String> memberClassNames, List<MyTypeMappedAnnotation<Annotation>> annotations){
+    //一个类里所有方法上的注解,如bean
+    private List<MyMethodMetadata> annotatedMethods;
+
+    public MySimpleAnnotationMetadata(String className, int access, String enclosingClassName,
+                                      String superClassName, boolean independentInnerClass, String[] interfaceNames,
+                                      Set<String> memberClassNames, List<MyTypeMappedAnnotation<Annotation>> annotations,List<MyMethodMetadata> annotatedMethods){
         this.className = className;
         this.access = access;
         this.enclosingClassName = enclosingClassName;
@@ -34,6 +37,7 @@ public class MyAnnotationMetadata {
         this.interfaceNames = interfaceNames;
         this.memberClassNames = memberClassNames;
         this.annotations = annotations;
+        this.annotatedMethods=annotatedMethods;
 
     }
 
@@ -55,6 +59,19 @@ public class MyAnnotationMetadata {
             }
         }
         return null;
+    }
+
+    public Set<MyMethodMetadata> getAnnotatedMethods(String annotationName) {
+        Set<MyMethodMetadata> annotatedMethods = null;
+        for (MyMethodMetadata annotatedMethod : this.annotatedMethods) {
+            if (annotatedMethod.isAnnotated(annotationName)) {
+                if (annotatedMethods == null) {
+                    annotatedMethods = new LinkedHashSet<>(4);
+                }
+                annotatedMethods.add(annotatedMethod);
+            }
+        }
+        return annotatedMethods != null ? annotatedMethods : Collections.emptySet();
     }
 
     public boolean hasAnnotation(Object requiredType) {

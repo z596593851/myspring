@@ -1,16 +1,9 @@
 package com.hxm.myspring.test;
 
 import org.hxm.myspring.annotation.MyScope;
-import org.hxm.myspring.asm.MyAnnotationMetadata;
-import org.hxm.myspring.asm.MyMetadataReader;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 public class Main {
     static Class<? extends Annotation> scopeAnnotationType = MyScope.class;

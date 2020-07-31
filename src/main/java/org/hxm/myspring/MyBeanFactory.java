@@ -3,7 +3,12 @@ package org.hxm.myspring;
 
 import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.function.MyObjectFactory;
+import org.hxm.myspring.postprocessor.MyAutowiredProcessor;
+import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
+import org.hxm.myspring.postprocessor.MyBeanPostProcessor;
+import org.hxm.myspring.postprocessor.MyConfigurationClassPostProcessor;
 import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.beans.factory.FactoryBean;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -65,7 +70,12 @@ public class MyBeanFactory {
     public Object createBean(String beanName,MyBeanDefinition mbd) throws Exception{
         Object bean = this.singletonObjects.get(beanName);
         if(bean==null){
-            //bean的实例化
+            //标注了@Bean的bean的实例化
+            if (mbd.getFactoryMethodName() != null) {
+
+            }
+
+            //普通bean的实例化
             bean=createBeanInstance(beanName,mbd);
             Class<?> beanType=bean.getClass();
             mbd.resolvedTargetType = beanType;
@@ -170,14 +180,45 @@ public class MyBeanFactory {
         try {
             for(String beanName:beanDefinitionNames){
                 MyBeanDefinition beanDefinition=getBeanDefinition(beanName);
+                isFactoryBean(beanName, beanDefinition);
                 beanDefinition.resolveBeanClass(getBeanClassLoader());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    public boolean isFactoryBean(String beanName,MyBeanDefinition mbd){
+        Boolean result = mbd.isFactoryBean;
+        if (result == null) {
+            Class<?> beanType = predictBeanType(beanName, mbd, FactoryBean.class);
+            result = (beanType != null && FactoryBean.class.isAssignableFrom(beanType));
+            mbd.isFactoryBean = result;
+        }
+        return result;
+    }
+
+    public List<String> getBeanDefinitionNames(){
+        return this.beanDefinitionNames;
+    }
 
     public List<MyBeanFactoryPostProcessor>getBeanFactoryPostProcessor(){
         return this.beanFactoryPostProcessors;
+    }
+
+    public void instantiateUsingFactoryMethod(String beanName, MyBeanDefinition mbd){
+        Object factoryBean;
+        Class<?> factoryClass;
+        String factoryBeanName=mbd.getFactoryBeanName();
+        if(factoryBeanName!=null){
+            try {
+                factoryBean=getBean(factoryBeanName);
+                factoryClass=factoryBean.getClass();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }else{
+            factoryBean=null;
+            factoryClass=mbd.getBeanClass();
+        }
     }
 }

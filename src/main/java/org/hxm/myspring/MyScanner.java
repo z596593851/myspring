@@ -2,7 +2,7 @@ package org.hxm.myspring;
 
 import org.hxm.myspring.annotation.MyComponent;
 import org.hxm.myspring.annotation.MyScopeMetadata;
-import org.hxm.myspring.asm.MyMetadataReader;
+import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyAnnotationTypeFilter;
 import org.hxm.myspring.utils.MyBeanNameGenerator;
 import org.hxm.myspring.utils.MyClassUtil;
@@ -10,7 +10,6 @@ import org.hxm.myspring.utils.MyMetadataResolver;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.core.type.filter.TypeFilter;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +56,7 @@ public class MyScanner {
             List<Resource> resources= Arrays.stream(listDirectory(rootDir)).map(FileSystemResource::new).collect(Collectors.toList());
             for (Resource resource : resources) {
                 if (resource.isReadable()) {
-                    MyMetadataReader metadataReader=new MyMetadataReader(resource);
+                    MySimpleMetadataReader metadataReader=new MySimpleMetadataReader(resource);
                     //检查是否有@MyComponent注解
                     if(isCandidateComponent(metadataReader)){
                         MyBeanDefinition mbd=new MyBeanDefinition(metadataReader);
@@ -85,7 +84,7 @@ public class MyScanner {
         return files;
     }
 
-    protected boolean isCandidateComponent(MyMetadataReader metadataReader){
+    protected boolean isCandidateComponent(MySimpleMetadataReader metadataReader){
         for(MyAnnotationTypeFilter filter:this.includeFilters){
             if(filter.match(metadataReader)){
                 return true;

@@ -1,7 +1,6 @@
 package org.hxm.myspring;
 
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
+import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
 
 import java.util.Collection;
 import java.util.List;
@@ -46,9 +45,9 @@ public class MyApplicationContext {
     }
 
     protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
-        beanFactory.getBeanNamesForType();
         List<MyBeanFactoryPostProcessor> currentRegistryProcessors=beanFactory.getBeanFactoryPostProcessor();
         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors,beanFactory);
+        beanFactory.getBeanNamesForType();
 
     }
 

@@ -1,5 +1,8 @@
-package org.hxm.myspring;
+package org.hxm.myspring.postprocessor;
 
+import org.hxm.myspring.MyBeanDefinition;
+import org.hxm.myspring.MyBeanFactory;
+import org.hxm.myspring.MyInjectionMetadata;
 import org.hxm.myspring.annotation.MyAutowired;
 import org.hxm.myspring.annotation.MyValue;
 
@@ -30,7 +33,7 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         this.beanFactory=beanFactory;
     }
 
-    public void postProcessMergedBeanDefinition(MyBeanDefinition beanDefinition,Class<?> beanType, String beanName){
+    public void postProcessMergedBeanDefinition(MyBeanDefinition beanDefinition, Class<?> beanType, String beanName){
     }
 
     public void postProcessProperties(Object bean, String beanName) throws Throwable {

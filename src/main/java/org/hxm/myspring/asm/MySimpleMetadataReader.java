@@ -3,17 +3,17 @@ import org.objectweb.asm.ClassReader;
 import org.springframework.core.io.Resource;
 import java.io.IOException;
 
-public class MyMetadataReader {
+public class MySimpleMetadataReader {
     private static final int PARSING_OPTIONS = ClassReader.SKIP_DEBUG
             | ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
 
     private  Resource resource;
 
-    private final MyAnnotationMetadata annotationMetadata;
+    private final MySimpleAnnotationMetadata annotationMetadata;
 
 
-    public MyMetadataReader(Resource resource) throws IOException {
-        MyVisitor visitor=new MyVisitor(this.getClass().getClassLoader());
+    public MySimpleMetadataReader(Resource resource) throws IOException {
+        MySimpleAnnotationMetadataReadingVisitor visitor=new MySimpleAnnotationMetadataReadingVisitor(this.getClass().getClassLoader());
         ClassReader classReader=new ClassReader(resource.getInputStream());
         classReader.accept(visitor, PARSING_OPTIONS);
         this.resource = resource;
@@ -24,19 +24,19 @@ public class MyMetadataReader {
      * 测试用构造函数
      * @param clazz
      */
-    public MyMetadataReader(Class<?> clazz){
+    public MySimpleMetadataReader(Class<?> clazz){
         ClassReader classReader=null;
         try {
             classReader=new ClassReader(clazz.getName());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        MyVisitor visitor=new MyVisitor(this.getClass().getClassLoader());
+        MySimpleAnnotationMetadataReadingVisitor visitor=new MySimpleAnnotationMetadataReadingVisitor(this.getClass().getClassLoader());
         classReader.accept(visitor, PARSING_OPTIONS);
         this.annotationMetadata = visitor.getMetadata();
     }
 
-    public MyAnnotationMetadata getAnnotationMetadata(){
+    public MySimpleAnnotationMetadata getAnnotationMetadata(){
         return annotationMetadata;
     }
 

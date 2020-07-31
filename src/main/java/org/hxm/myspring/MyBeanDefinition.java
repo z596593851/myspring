@@ -1,7 +1,7 @@
 package org.hxm.myspring;
 
-import org.hxm.myspring.asm.MyAnnotationMetadata;
-import org.hxm.myspring.asm.MyMetadataReader;
+import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
+import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.core.io.Resource;
 
@@ -9,21 +9,39 @@ import java.lang.reflect.Executable;
 
 public class MyBeanDefinition {
 
+    public static final int AUTOWIRE_NO = 0;
+
+    public static final int AUTOWIRE_BY_NAME = 1;
+
+    public static final int AUTOWIRE_BY_TYPE = 2;
+
+    public static final int AUTOWIRE_CONSTRUCTOR = 3;
+
     private Object source;
 
     private String beanClassName;
 
+    volatile Boolean isFactoryBean;
+
     private Object beanClass;
+
+    private String factoryBeanName;
+
+    private String factoryMethodName;
 
     private Resource resource;
 
-    private MyAnnotationMetadata metadata;
+    private int autowireMode = AUTOWIRE_NO;
+
+    private MySimpleAnnotationMetadata metadata;
 
     Executable resolvedConstructorOrFactoryMethod;
 
     volatile Class<?> resolvedTargetType;
 
     private String scope = "";
+
+    boolean isFactoryMethodUnique = false;
 
     public String getScope() {
         return scope;
@@ -43,7 +61,7 @@ public class MyBeanDefinition {
 
     public MyBeanDefinition(){}
 
-    public MyBeanDefinition(MyMetadataReader metadataReader){
+    public MyBeanDefinition(MySimpleMetadataReader metadataReader){
         this.metadata=metadataReader.getAnnotationMetadata();
         setBeanClassName(this.metadata.getClassName());
 
@@ -65,7 +83,7 @@ public class MyBeanDefinition {
         this.resource = resource;
     }
 
-    public MyAnnotationMetadata getMetadata() {
+    public MySimpleAnnotationMetadata getMetadata() {
         return metadata;
     }
 
@@ -89,5 +107,30 @@ public class MyBeanDefinition {
         Class<?> resolvedClass = MyClassUtil.forName(className.replace("/","."), classLoader);
         this.beanClass = resolvedClass;
         return resolvedClass;
+    }
+
+    public void setFactoryBeanName(String factoryBeanName){
+        this.factoryBeanName=factoryBeanName;
+    }
+
+    public void setFactoryMethodName(String factoryMethodName) {
+        this.factoryMethodName = factoryMethodName;
+    }
+
+    public void setUniqueFactoryMethodName(String name){
+        setFactoryMethodName(name);
+        this.isFactoryMethodUnique=true;
+    }
+
+    public void setAutowireMode(int autowireMode){
+        this.autowireMode=autowireMode;
+    }
+
+    public String getFactoryMethodName(){
+        return this.factoryMethodName;
+    }
+
+    public String getFactoryBeanName(){
+        return this.factoryBeanName;
     }
 }
