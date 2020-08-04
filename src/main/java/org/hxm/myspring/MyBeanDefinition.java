@@ -3,9 +3,11 @@ package org.hxm.myspring;
 import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.io.Resource;
 
 import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
 
 public class MyBeanDefinition {
 
@@ -27,6 +29,8 @@ public class MyBeanDefinition {
 
     private String factoryBeanName;
 
+    volatile Method factoryMethodToIntrospect;
+
     private String factoryMethodName;
 
     private Resource resource;
@@ -38,6 +42,12 @@ public class MyBeanDefinition {
     Executable resolvedConstructorOrFactoryMethod;
 
     volatile Class<?> resolvedTargetType;
+
+    volatile ResolvableType factoryMethodReturnType;
+
+    boolean constructorArgumentsResolved = false;
+
+    Object[] resolvedConstructorArguments;
 
     private String scope = "";
 
@@ -132,5 +142,17 @@ public class MyBeanDefinition {
 
     public String getFactoryBeanName(){
         return this.factoryBeanName;
+    }
+
+    public Class<?> getTargetType(){
+        return this.resolvedTargetType;
+    }
+
+    public Method getResolvedFactoryMethod() {
+        return this.factoryMethodToIntrospect;
+    }
+
+    public boolean isFactoryMethod(Method candidate) {
+        return candidate.getName().equals(getFactoryMethodName());
     }
 }

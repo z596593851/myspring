@@ -5,6 +5,8 @@ import org.hxm.myspring.MyBeanFactory;
 import org.hxm.myspring.MyInjectionMetadata;
 import org.hxm.myspring.annotation.MyAutowired;
 import org.hxm.myspring.annotation.MyValue;
+import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
@@ -69,6 +71,7 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
             Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
             Object value = beanFactory.resolveDependency(beanName,field,autowiredBeanNames);
             if (value != null) {
+                MyClassUtil.makeAccessible(field);
                 field.set(bean, value);
             }
         }

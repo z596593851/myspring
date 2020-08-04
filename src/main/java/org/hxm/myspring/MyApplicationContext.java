@@ -1,6 +1,7 @@
 package org.hxm.myspring;
 
 import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
+import sun.tools.native2ascii.Main;
 
 import java.util.Collection;
 import java.util.List;
@@ -47,7 +48,8 @@ public class MyApplicationContext {
     protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
         List<MyBeanFactoryPostProcessor> currentRegistryProcessors=beanFactory.getBeanFactoryPostProcessor();
         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors,beanFactory);
-        beanFactory.getBeanNamesForType();
+        beanFactory.getBeanNamesForType(Main.class,false);
+
 
     }
 

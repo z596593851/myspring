@@ -14,7 +14,6 @@ public class Main {
         dog.say();
 
 
-
 //        Class<?> clazz = Dog.class;
 //        Field[] result=clazz.getDeclaredFields();
 //        Field field=result[0];
