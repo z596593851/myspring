@@ -1,6 +1,7 @@
 package com.hxm.myspring.mybean;
 
 import org.hxm.myspring.annotation.MyAutowired;
+import org.hxm.myspring.annotation.MyBean;
 import org.hxm.myspring.annotation.MyComponent;
 import org.hxm.myspring.annotation.MyValue;
 import org.springframework.context.annotation.Configuration;
@@ -13,12 +14,17 @@ public class Man {
 
     @MyValue("male")
     private String sex;
+//
+//    @MyAutowired
+//    private Women women;
 
-    @MyAutowired
-    private Women women;
+    @MyBean
+    public Child Child(){
+        return new Child();
+    }
 
     public void say(){
         System.out.println(this.name+"===="+this.sex);
-        women.say();
+//        women.say();
     }
 }

@@ -36,9 +36,9 @@ public class MyConfigurationClassBeanDefinitionReader {
         beanDef.setFactoryBeanName(configClass.getBeanName());
         beanDef.setUniqueFactoryMethodName(methodName);
 
-        String scope=(String) metadata.getAnnotationAttributes(MyScope.class).get("name");
-        if(scope!=null){
-            beanDef.setScope(scope);
+        Map<String,Object> attributes=metadata.getAnnotationAttributes(MyScope.class);
+        if(attributes!=null){
+            beanDef.setScope((String) attributes.get("value"));
         }
         this.registry.registerBeanDefinition(beanName,beanDef);
     }

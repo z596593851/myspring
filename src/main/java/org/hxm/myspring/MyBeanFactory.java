@@ -154,7 +154,7 @@ public class MyBeanFactory {
                     candidates = Collections.singletonList(factoryMethodToUse);
                 }
             }
-            if (candidates.size() == 1 &&  explicitArgs == null){
+            if (candidates.size() == 1){
                 Method uniqueCandidate = candidates.get(0);
                 if (uniqueCandidate.getParameterCount() == 0) {
                     mbd.factoryMethodToIntrospect = uniqueCandidate;

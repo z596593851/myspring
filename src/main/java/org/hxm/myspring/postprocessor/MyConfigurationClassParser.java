@@ -4,6 +4,7 @@ import org.hxm.myspring.MyBeanDefinition;
 import org.hxm.myspring.annotation.MyBean;
 import org.hxm.myspring.asm.MyMethodMetadata;
 import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
+import org.hxm.myspring.utils.MyBeanNameGenerator;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +17,8 @@ public class MyConfigurationClassParser {
 
     public void parse(List<MyBeanDefinition> configCandidates){
         for(MyBeanDefinition beanDefinition:configCandidates){
-            processConfigurationClass(new MyConfigurationClass(beanDefinition.getMetadata(),beanDefinition.getBeanClassName()));
+            String beanName= MyBeanNameGenerator.generateBeanName(beanDefinition);
+            processConfigurationClass(new MyConfigurationClass(beanDefinition.getMetadata(),beanName));
         }
     }
 

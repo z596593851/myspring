@@ -14,10 +14,10 @@ public class Dog {
     @Autowired
     People people;
 
-//    @Bean
-//    public Me getMe(){
-//        return new Me();
-//    }
+    @Bean
+    public Me getMe(){
+        return new Me();
+    }
 
     public void say(){
         System.out.println(content);

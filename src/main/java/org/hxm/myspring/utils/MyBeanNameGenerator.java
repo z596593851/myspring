@@ -4,7 +4,7 @@ import org.hxm.myspring.MyApplicationContext;
 import org.hxm.myspring.MyBeanDefinition;
 
 public class MyBeanNameGenerator {
-    public String generateBeanName(MyBeanDefinition beanDefinition){
+    public static String generateBeanName(MyBeanDefinition beanDefinition){
         String className=beanDefinition.getBeanClassName();
         int lastDotIndex = className.lastIndexOf("/");
         int nameEndIndex = className.length();
