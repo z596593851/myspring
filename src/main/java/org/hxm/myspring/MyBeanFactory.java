@@ -8,13 +8,12 @@ import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
 import org.hxm.myspring.postprocessor.MyBeanPostProcessor;
 import org.hxm.myspring.postprocessor.MyConfigurationClassPostProcessor;
 import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.beans.factory.BeanCurrentlyInCreationException;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.ResolvableType;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -45,6 +44,21 @@ public class MyBeanFactory {
 
     private Map<Class<?>, String[]> allBeanNamesByType = new ConcurrentHashMap<>();
 
+    private boolean allowCircularReferences = true;
+
+    //正在被创建的bean
+    private final Set<String> singletonsCurrentlyInCreation =
+            Collections.newSetFromMap(new ConcurrentHashMap<>(16));
+
+    //三级缓存
+    private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+
+    //二级缓存
+    private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
+
+    /** Set of registered singletons, containing the bean names in registration order. */
+    private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
+
     static {
         Map<Class<?>, Object> values = new HashMap<>();
         values.put(boolean.class, false);
@@ -61,22 +75,22 @@ public class MyBeanFactory {
     }
 
     public Object getBean(String beanName) throws Exception{
-        MyBeanDefinition mbd = getBeanDefinition(beanName);
-        if(mbd==null){
-            throw new Exception(String.format("没有名为%s的beanDefinition",beanName));
-        }
-        try {
-            Object bean=getSingleton(beanName,()->{
+        Object sharedInstance = getSingleton(beanName);
+        if(sharedInstance==null){
+            MyBeanDefinition mbd = getBeanDefinition(beanName);
+            if(mbd==null){
+                throw new Exception(String.format("没有名为%s的beanDefinition",beanName));
+            }
+            sharedInstance=getSingleton(beanName,()->{
                 try {
                     return createBean(beanName,mbd);
                 } catch (Exception e) {
                     throw e;
                 }
             });
-            return bean;
-        } catch (Exception e) {
-            throw e;
         }
+        return sharedInstance;
+
     }
 
     public Object createBean(String beanName,MyBeanDefinition mbd) throws Exception{
@@ -86,6 +100,14 @@ public class MyBeanFactory {
             bean=createBeanInstance(beanName,mbd);
             Class<?> beanType=bean.getClass();
             mbd.resolvedTargetType = beanType;
+            //循环依赖 2-将当前正在创建的Bean保存到三级缓存中，并从二级缓存中移除
+            //（由于本来二级缓存中没有，故可以只认定为放入三级缓存）
+            boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
+                    isSingletonCurrentlyInCreation(beanName));
+            if (earlySingletonExposure) {
+                Object finalBean = bean;
+                addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, finalBean));
+            }
             try {
                 //属性注入
                 populateBean(beanName,mbd,bean);
@@ -96,21 +118,53 @@ public class MyBeanFactory {
         return bean;
     }
 
-    public Object getSingleton(String beanName, MyObjectFactory<?> objectFactory) throws Exception{
+    public Object getSingleton(String beanName, MyObjectFactory<?> objectFactory){
         Object singletonObject = this.singletonObjects.get(beanName);
         if(singletonObject==null){
-            singletonObject=objectFactory.getObject();
-            addSingleton(beanName,singletonObject);
+            //循环依赖 1-放入正在创建的bean
+            beforeSingletonCreation(beanName);
+            boolean newSingleton = false;
+            try {
+                singletonObject=objectFactory.getObject();
+                newSingleton = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                //循环依赖 4-从"正在创建的bean中移除"
+                afterSingletonCreation(beanName);
+            }
+            if(newSingleton){
+                //循环依赖 5-将创建的这个Bean放入一级缓存，从二级缓存和三级缓存中移除
+                addSingleton(beanName,singletonObject);
+            }
         }
         return singletonObject;
     }
 
     public Object getSingleton(String beanName){
-        return this.singletonObjects.get(beanName);
+        Object singletonObject=this.singletonObjects.get(beanName);
+        // 循环依赖 3-当一个对象被第二次获取时，处于正在被创建状态，进入if，
+        // 放入二级缓存，从三级缓存移除，
+        // 返回一个正在创建但还没依赖注入的对象
+        if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+            singletonObject = this.earlySingletonObjects.get(beanName);
+            if (singletonObject == null) {
+                ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+                if (singletonFactory != null) {
+                    singletonObject = singletonFactory.getObject();
+                    this.earlySingletonObjects.put(beanName, singletonObject);
+                    this.singletonFactories.remove(beanName);
+                }
+            }
+        }
+        return singletonObject;
     }
 
     public void addSingleton(String beanName, Object singletonObject) {
-        this.singletonObjects.put(beanName,singletonObject);
+        this.singletonObjects.put(beanName, singletonObject);
+        this.singletonFactories.remove(beanName);
+        this.earlySingletonObjects.remove(beanName);
+        this.registeredSingletons.add(beanName);
     }
 
     public Object createBeanInstance(String beanName, MyBeanDefinition mbd,Object... args) throws Exception {
@@ -451,4 +505,32 @@ public class MyBeanFactory {
         Class<?> beanClass = predictBeanType(name, mbd);
         return beanClass;
     }
+
+    public boolean isSingletonCurrentlyInCreation(String beanName) {
+        return this.singletonsCurrentlyInCreation.contains(beanName);
+    }
+
+    protected void beforeSingletonCreation(String beanName) {
+        this.singletonsCurrentlyInCreation.add(beanName);
+    }
+    protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
+        Assert.notNull(singletonFactory, "Singleton factory must not be null");
+        synchronized (this.singletonObjects) {
+            if (!this.singletonObjects.containsKey(beanName)) {
+                //三级缓存
+                this.singletonFactories.put(beanName, singletonFactory);
+                //二级缓存
+                this.earlySingletonObjects.remove(beanName);
+                this.registeredSingletons.add(beanName);
+            }
+        }
+    }
+    protected Object getEarlyBeanReference(String beanName,  MyBeanDefinition beanDefinition, Object bean) {
+        return bean;
+    }
+
+    protected void afterSingletonCreation(String beanName) {
+        this.singletonsCurrentlyInCreation.remove(beanName);
+    }
 }
+

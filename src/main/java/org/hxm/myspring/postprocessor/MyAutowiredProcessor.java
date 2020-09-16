@@ -38,6 +38,7 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
     public void postProcessMergedBeanDefinition(MyBeanDefinition beanDefinition, Class<?> beanType, String beanName){
     }
 
+    @Override
     public void postProcessProperties(Object bean, String beanName) throws Throwable {
         MyInjectionMetadata metadata = buildAutowiringMetadata(bean.getClass());
         metadata.inject(bean, beanName);
@@ -66,7 +67,8 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
             this.required = required;
         }
 
-        protected void inject(Object bean,  String beanName) throws Throwable {
+        @Override
+        protected void inject(Object bean, String beanName) throws Throwable {
             Field field = (Field) this.member;
             Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
             Object value = beanFactory.resolveDependency(beanName,field,autowiredBeanNames);
