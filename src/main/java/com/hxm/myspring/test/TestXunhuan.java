@@ -8,8 +8,8 @@ import org.hxm.myspring.MyApplicationContext;
 public class TestXunhuan {
     public static void main(String[] args) throws Exception{
         MyApplicationContext applicationContext=new MyApplicationContext("com.hxm.myspring.mybean2");
-        Cat cat=(Cat) applicationContext.getBean("Cat");
-        Person p=(Person) applicationContext.getBean("Person");
+        Cat cat=(Cat) applicationContext.getBean("cat");
+        Person p=(Person) applicationContext.getBean("person");
         cat.say();
         p.say();
     }

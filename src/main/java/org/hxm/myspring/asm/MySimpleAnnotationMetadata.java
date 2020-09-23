@@ -1,6 +1,7 @@
 package org.hxm.myspring.asm;
 
-import org.springframework.core.type.MethodMetadata;
+
+import org.objectweb.asm.Opcodes;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -20,10 +21,14 @@ public class MySimpleAnnotationMetadata {
 
     private Set<String> memberClassNames;
 
-    //一个类上标注的所有注解,如compoment,scope
+    /**
+     * 一个类上标注的所有注解,如compoment,scope
+     */
     private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
-    //一个类里所有方法上的注解,如bean
+    /**
+     * 一个类里所有方法上的注解,如bean
+     */
     private List<MyMethodMetadata> annotatedMethods;
 
     public MySimpleAnnotationMetadata(String className, int access, String enclosingClassName,
@@ -74,6 +79,11 @@ public class MySimpleAnnotationMetadata {
         return annotatedMethods != null ? annotatedMethods : Collections.emptySet();
     }
 
+    /**
+     * 判断类是否有某个注解
+     * @param requiredType 注解名or注解类
+     * @return
+     */
     public boolean hasAnnotation(Object requiredType) {
         for(MyTypeMappedAnnotation<?> annotation:this.annotations){
             Class<?> type = annotation.getAnnotationType();
@@ -84,4 +94,50 @@ public class MySimpleAnnotationMetadata {
         return false;
 
     }
+
+    /**
+     * 判断类是否包含标注了某个注解的方法
+     * @param annotationName
+     * @return
+     */
+    public boolean hasAnnotatedMethods(String annotationName){
+        return !getAnnotatedMethods(annotationName).isEmpty();
+    }
+
+    public boolean isInterface() {
+        return (this.access & Opcodes.ACC_INTERFACE) != 0;
+    }
+    public boolean isAnnotation() {
+        return (this.access & Opcodes.ACC_ANNOTATION) != 0;
+    }
+
+    public boolean isAbstract() {
+        return (this.access & Opcodes.ACC_ABSTRACT) != 0;
+    }
+
+    public boolean isFinal() {
+        return (this.access & Opcodes.ACC_FINAL) != 0;
+    }
+
+    public boolean isIndependent() {
+        return (this.enclosingClassName == null || this.independentInnerClass);
+    }
+
+    public String getEnclosingClassName() {
+        return this.enclosingClassName;
+    }
+
+    public String getSuperClassName() {
+        return this.superClassName;
+    }
+
+    public String[] getInterfaceNames() {
+        return this.interfaceNames.clone();
+    }
+
+    public String[] getMemberClassNames() {
+        String[] a=new String[memberClassNames.size()];
+        return this.memberClassNames.toArray(a).clone();
+    }
+
 }

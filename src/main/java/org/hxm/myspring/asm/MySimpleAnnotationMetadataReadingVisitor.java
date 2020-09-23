@@ -136,11 +136,11 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
     }
 
     public String toClassName(String name){
-        return name.replace(".","/");
+        return name.replace("/",".");
     }
 
     private boolean isInterface(int access) {
-        return (access & org.springframework.asm.Opcodes.ACC_INTERFACE) != 0;
+        return (access & Opcodes.ACC_INTERFACE) != 0;
     }
 
     public MySimpleAnnotationMetadata getMetadata(){

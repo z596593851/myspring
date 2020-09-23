@@ -6,12 +6,13 @@ import org.hxm.myspring.MyInjectionMetadata;
 import org.hxm.myspring.annotation.MyAutowired;
 import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.utils.MyClassUtil;
-import org.springframework.util.ClassUtils;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class MyAutowiredProcessor implements MyBeanPostProcessor{
 
@@ -44,8 +45,10 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         metadata.inject(bean, beanName);
     }
 
+    /**
+     * 通过反射拿到一个类的所有成员的注解（仅限于@MyAutowired和@MyValue）
+     */
     public MyInjectionMetadata buildAutowiringMetadata(Class<?> clazz) throws Exception{
-        //拿到一个类的所有成员的注解（仅限于@MyAutowired和@MyValue）
         List<MyInjectionMetadata.MyInjectedElement> elements = new ArrayList<>();
         Field[] result=clazz.getDeclaredFields();
         for(Field field:result){

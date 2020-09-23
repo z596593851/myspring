@@ -10,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         AnnotationConfigApplicationContext ctx= new AnnotationConfigApplicationContext("com.hxm.myspring.test");
-        Dog dog=(Dog) ctx.getBean("dog");
+        Dog dog=(Dog) ctx.getBean("people");
         dog.say();
 
 

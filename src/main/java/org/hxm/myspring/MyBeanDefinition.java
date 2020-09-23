@@ -5,9 +5,13 @@ import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MyBeanDefinition {
 
@@ -53,6 +57,8 @@ public class MyBeanDefinition {
 
     boolean isFactoryMethodUnique = false;
 
+    private Map<String, Object> attributes = new LinkedHashMap<>();
+
     public String getScope() {
         return scope;
     }
@@ -78,11 +84,19 @@ public class MyBeanDefinition {
     }
 
     public String getBeanClassName() {
-        return beanClassName;
+//        return beanClassName;
+        Object beanClassObject = this.beanClass;
+        if (beanClassObject instanceof Class) {
+            return ((Class<?>) beanClassObject).getName();
+        }
+        else {
+            return (String) beanClassObject;
+        }
     }
 
     public void setBeanClassName(String beanClassName) {
-        this.beanClassName = beanClassName;
+//        this.beanClassName = beanClassName;
+        this.beanClass = beanClassName;
     }
 
     public Resource getResource() {
@@ -114,7 +128,7 @@ public class MyBeanDefinition {
         if (className == null) {
             return null;
         }
-        Class<?> resolvedClass = MyClassUtil.forName(className.replace("/","."), classLoader);
+        Class<?> resolvedClass = MyClassUtil.forName(className, classLoader);
         this.beanClass = resolvedClass;
         return resolvedClass;
     }
@@ -154,5 +168,26 @@ public class MyBeanDefinition {
 
     public boolean isFactoryMethod(Method candidate) {
         return candidate.getName().equals(getFactoryMethodName());
+    }
+
+
+    public void setAttribute(String name, @Nullable Object value) {
+        Assert.notNull(name, "Name must not be null");
+        if (value != null) {
+            this.attributes.put(name, value);
+        }
+        else {
+            removeAttribute(name);
+        }
+    }
+
+    public Object getAttribute(String name) {
+        Assert.notNull(name, "Name must not be null");
+        return this.attributes.get(name);
+    }
+
+    public Object removeAttribute(String name) {
+        Assert.notNull(name, "Name must not be null");
+        return this.attributes.remove(name);
     }
 }

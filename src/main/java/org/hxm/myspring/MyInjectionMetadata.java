@@ -1,7 +1,5 @@
 package org.hxm.myspring;
 
-import org.springframework.beans.PropertyValues;
-
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -10,11 +8,7 @@ import java.util.Collections;
 import java.util.Set;
 
 public class MyInjectionMetadata {
-
-
-
     public static final MyInjectionMetadata EMPTY = new MyInjectionMetadata(Object.class, Collections.emptyList());
-
     private final Class<?> targetClass;
     private final Collection<MyInjectedElement> injectedElements;
     private volatile Set<MyInjectedElement> checkedElements;
@@ -50,8 +44,6 @@ public class MyInjectionMetadata {
             }
         }
     }
-
-
 
     public static MyInjectionMetadata forElements(Collection<MyInjectedElement> elements, Class<?> clazz) {
         return (elements.isEmpty() ? MyInjectionMetadata.EMPTY : new MyInjectionMetadata(clazz, elements));

@@ -1,12 +1,14 @@
 package org.hxm.myspring;
 
 import org.hxm.myspring.annotation.MyComponent;
+import org.hxm.myspring.annotation.MyConfiguration;
 import org.hxm.myspring.annotation.MyScopeMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyAnnotationTypeFilter;
 import org.hxm.myspring.utils.MyBeanNameGenerator;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.hxm.myspring.utils.MyMetadataResolver;
+import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -21,8 +23,6 @@ public class MyScanner {
 
     private MyApplicationContext registry;
 
-    private MyBeanNameGenerator beanNameGenerator=new MyBeanNameGenerator();
-
     private MyMetadataResolver myMetadataResolver = new MyMetadataResolver();
 
     private List<MyAnnotationTypeFilter> includeFilters = new LinkedList<>();
@@ -36,7 +36,7 @@ public class MyScanner {
         for (String basePackage : basePackages) {
             Set<MyBeanDefinition> candidates=scanCandidateComponents(basePackage) ;
             for(MyBeanDefinition candidate:candidates){
-                String beanName=beanNameGenerator.generateBeanName(candidate);
+                String beanName= MyBeanNameGenerator.generateBeanName(candidate);
                 MyScopeMetadata scopeMetadata=this.myMetadataResolver.resolveScopeMetadata(candidate);
                 candidate.setScope(scopeMetadata.getScopeName());
                 this.registry.registerBeanDefinition(beanName,candidate);
@@ -73,6 +73,7 @@ public class MyScanner {
 
     protected void registerDefaultFilters() {
         this.includeFilters.add(new MyAnnotationTypeFilter(MyComponent.class));
+        this.includeFilters.add(new MyAnnotationTypeFilter(MyConfiguration.class));
     }
 
     public File[] listDirectory(File dir) {

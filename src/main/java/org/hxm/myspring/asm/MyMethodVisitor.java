@@ -41,6 +41,7 @@ public class MyMethodVisitor extends MethodVisitor {
         this.consumer = consumer;
     }
 
+    @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }

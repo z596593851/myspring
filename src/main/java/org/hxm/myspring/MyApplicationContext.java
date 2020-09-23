@@ -22,6 +22,7 @@ public class MyApplicationContext {
     }
 
     public void scan(String... basePackages){
+        //扫描标注了@MyComponent的类(@MyConfiguration里也有@MyComponent)为BeanDefinition
         this.scanner.scan(basePackages);
         refresh();
     }
@@ -31,8 +32,10 @@ public class MyApplicationContext {
     }
 
     public void refresh(){
-        //省略一些方法
+        //扫描标注了@MyBean的类(方法)为BeanDefinition
         invokeBeanFactoryPostProcessors(beanFactory);
+
+        //根据BeanDefinition创建实例和属性注入
         finishBeanFactoryInitialization(beanFactory);
 
     }
@@ -47,6 +50,7 @@ public class MyApplicationContext {
 
     protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
         List<MyBeanFactoryPostProcessor> currentRegistryProcessors=beanFactory.getBeanFactoryPostProcessor();
+        //解析@MyConfiguration和@MyBean
         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors,beanFactory);
         beanFactory.getBeanNamesForType(Main.class,false);
 
