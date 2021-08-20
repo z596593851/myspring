@@ -1,8 +1,8 @@
 package org.hxm.myspring.postprocessor;
 
-import org.hxm.myspring.MyBeanDefinition;
-import org.hxm.myspring.MyBeanFactory;
-import org.hxm.myspring.MyInjectionMetadata;
+import org.hxm.myspring.factory.MyBeanDefinition;
+import org.hxm.myspring.factory.MyBeanFactory;
+import org.hxm.myspring.factory.MyInjectionMetadata;
 import org.hxm.myspring.annotation.MyAutowired;
 import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.utils.MyClassUtil;

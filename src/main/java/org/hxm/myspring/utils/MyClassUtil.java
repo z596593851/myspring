@@ -1,10 +1,21 @@
 package org.hxm.myspring.utils;
 
+import org.hxm.myspring.factory.MyBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.lang.Nullable;
+import org.springframework.web.context.ConfigurableWebApplicationContext;
+import org.springframework.web.context.WebApplicationContext;
 
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MyClassUtil {
 
@@ -74,4 +85,60 @@ public class MyClassUtil {
             field.setAccessible(true);
         }
     }
+
+    public static void registerEnvironmentBeans(MyBeanFactory bf,
+                                                @Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
+
+        if (servletContext != null && !bf.containsBean(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME)) {
+            bf.registerSingleton(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME, servletContext);
+        }
+
+        if (servletConfig != null && !bf.containsBean(ConfigurableWebApplicationContext.SERVLET_CONFIG_BEAN_NAME)) {
+            bf.registerSingleton(ConfigurableWebApplicationContext.SERVLET_CONFIG_BEAN_NAME, servletConfig);
+        }
+
+        if (!bf.containsBean(WebApplicationContext.CONTEXT_PARAMETERS_BEAN_NAME)) {
+            Map<String, String> parameterMap = new HashMap<>();
+            if (servletContext != null) {
+                Enumeration<?> paramNameEnum = servletContext.getInitParameterNames();
+                while (paramNameEnum.hasMoreElements()) {
+                    String paramName = (String) paramNameEnum.nextElement();
+                    parameterMap.put(paramName, servletContext.getInitParameter(paramName));
+                }
+            }
+            if (servletConfig != null) {
+                Enumeration<?> paramNameEnum = servletConfig.getInitParameterNames();
+                while (paramNameEnum.hasMoreElements()) {
+                    String paramName = (String) paramNameEnum.nextElement();
+                    parameterMap.put(paramName, servletConfig.getInitParameter(paramName));
+                }
+            }
+            bf.registerSingleton(WebApplicationContext.CONTEXT_PARAMETERS_BEAN_NAME,
+                    Collections.unmodifiableMap(parameterMap));
+        }
+
+        if (!bf.containsBean(WebApplicationContext.CONTEXT_ATTRIBUTES_BEAN_NAME)) {
+            Map<String, Object> attributeMap = new HashMap<>();
+            if (servletContext != null) {
+                Enumeration<?> attrNameEnum = servletContext.getAttributeNames();
+                while (attrNameEnum.hasMoreElements()) {
+                    String attrName = (String) attrNameEnum.nextElement();
+                    attributeMap.put(attrName, servletContext.getAttribute(attrName));
+                }
+            }
+            bf.registerSingleton(WebApplicationContext.CONTEXT_ATTRIBUTES_BEAN_NAME,
+                    Collections.unmodifiableMap(attributeMap));
+        }
+    }
+
+    public static Object invokeMethod(Method method, Object target) {
+        try {
+            return method.invoke(target);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        throw new IllegalStateException("Should never get here");
+    }
+
+
 }

@@ -1,6 +1,7 @@
 package org.hxm.myspring.postprocessor;
 
-import org.hxm.myspring.MyBeanDefinitionHolder;
+import org.hxm.myspring.asm.MyAnnotationMetadata;
+import org.hxm.myspring.factory.MyBeanDefinitionHolder;
 import org.hxm.myspring.annotation.MyBean;
 import org.hxm.myspring.asm.MyMethodMetadata;
 import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
@@ -22,10 +23,14 @@ public class MyConfigurationClassParser {
             //将标注了@MyConfiguration的类封装成MyConfigurationClass
             processConfigurationClass(new MyConfigurationClass(beanDefinitionHolder.getBeanDefinition().getMetadata(),beanDefinitionHolder.getBeanName()));
         }
+        //todo 处理通过spi引入的config类
+
     }
 
     public void processConfigurationClass(MyConfigurationClass configClass){
-        MySimpleAnnotationMetadata origional=configClass.getMetadata();
+        MyAnnotationMetadata origional=configClass.getMetadata();
+        //todo 处理import
+
         Set<MyMethodMetadata> beanMethods = origional.getAnnotatedMethods(MyBean.class.getName());
         //提取MyConfigurationClass中所有标注了@MyBean的方法
         for(MyMethodMetadata methodMetadata:beanMethods){

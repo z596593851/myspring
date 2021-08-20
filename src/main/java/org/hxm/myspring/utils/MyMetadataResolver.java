@@ -1,6 +1,6 @@
 package org.hxm.myspring.utils;
 
-import org.hxm.myspring.MyBeanDefinition;
+import org.hxm.myspring.factory.MyBeanDefinition;
 import org.hxm.myspring.annotation.MyScope;
 import org.hxm.myspring.annotation.MyScopeMetadata;
 
@@ -13,7 +13,7 @@ public class MyMetadataResolver {
 
     public MyScopeMetadata resolveScopeMetadata(MyBeanDefinition definition){
         MyScopeMetadata metadata=new MyScopeMetadata();
-        Map<String,Object> attributes=definition.getMetadata().getAnnotationAttributes(scopeAnnotationType);
+        Map<String,Object> attributes=definition.getMetadata().getAnnotationAttributes(scopeAnnotationType.getName(),false);
         if(attributes!=null){
             metadata.setScopeName((String)attributes.get("value"));
         }

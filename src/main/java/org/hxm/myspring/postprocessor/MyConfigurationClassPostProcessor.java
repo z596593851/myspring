@@ -1,8 +1,9 @@
 package org.hxm.myspring.postprocessor;
 
-import org.hxm.myspring.MyBeanDefinition;
-import org.hxm.myspring.MyBeanDefinitionHolder;
-import org.hxm.myspring.MyBeanFactory;
+import org.hxm.myspring.asm.MyAnnotationMetadata;
+import org.hxm.myspring.factory.MyBeanDefinition;
+import org.hxm.myspring.factory.MyBeanDefinitionHolder;
+import org.hxm.myspring.factory.MyBeanFactory;
 import org.hxm.myspring.annotation.*;
 import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
 import org.springframework.context.annotation.Bean;
@@ -62,8 +63,8 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
         if(className==null || beanDef.getFactoryMethodName()!=null){
             return false;
         }
-        MySimpleAnnotationMetadata metadata=beanDef.getMetadata();
-        Map<String,Object> config = metadata.getAnnotationAttributes(MyConfiguration.class);
+        MyAnnotationMetadata metadata=beanDef.getMetadata();
+        Map<String,Object> config = metadata.getAnnotationAttributes(MyConfiguration.class.getName(),false);
         if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
             beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
         }
@@ -76,11 +77,10 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
         return true;
     }
 
-    public boolean isConfigurationCandidate(MySimpleAnnotationMetadata metadata){
+    public boolean isConfigurationCandidate(MyAnnotationMetadata metadata){
         if(metadata.isInterface()){
             return false;
         }
-
         for(String indicator : candidateIndicators){
             if(metadata.hasAnnotation(indicator)){
                 return true;

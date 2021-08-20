@@ -1,5 +1,6 @@
 package org.hxm.myspring.postprocessor;
 
+import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
 
 import java.util.ArrayList;
@@ -9,11 +10,11 @@ public class MyConfigurationClass {
 
     private String beanName;
 
-    private MySimpleAnnotationMetadata metadata;
+    private MyAnnotationMetadata metadata;
 
     private List<MyBeanMethod> beanMethods=new ArrayList<>();
 
-    public MyConfigurationClass(MySimpleAnnotationMetadata metadata, String beanName){
+    public MyConfigurationClass(MyAnnotationMetadata metadata, String beanName){
         this.metadata=metadata;
         this.beanName=beanName;
     }
@@ -26,7 +27,7 @@ public class MyConfigurationClass {
         return this.beanMethods;
     }
 
-    public MySimpleAnnotationMetadata getMetadata(){
+    public MyAnnotationMetadata getMetadata(){
         return this.metadata;
     }
 

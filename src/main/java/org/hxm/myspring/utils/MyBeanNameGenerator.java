@@ -1,6 +1,6 @@
 package org.hxm.myspring.utils;
 
-import org.hxm.myspring.MyBeanDefinition;
+import org.hxm.myspring.factory.MyBeanDefinition;
 
 public class MyBeanNameGenerator {
     public static String generateBeanName(MyBeanDefinition beanDefinition){

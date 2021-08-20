@@ -6,30 +6,41 @@ import org.objectweb.asm.Opcodes;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
-public class MySimpleAnnotationMetadata {
-    private final String className;
+public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
+    private String className;
 
-    private final int access;
+    private int access;
 
-    private final String enclosingClassName;
+    private String enclosingClassName;
 
-    private final String superClassName;
+    private String superClassName;
 
-    private final boolean independentInnerClass;
+    private boolean independentInnerClass;
 
-    private final String[] interfaceNames;
+    private String[] interfaceNames;
 
     private Set<String> memberClassNames;
+
+    private Class<?> introspectedClass;
+
+    private boolean nestedAnnotationsAsMap;
 
     /**
      * 一个类上标注的所有注解,如compoment,scope
      */
     private List<MyTypeMappedAnnotation<Annotation>> annotations;
 
+    private MyTypeMappedAnnotations annotationss;
     /**
      * 一个类里所有方法上的注解,如bean
      */
     private List<MyMethodMetadata> annotatedMethods;
+
+    public MySimpleAnnotationMetadata(Class<?> introspectedClass, boolean nestedAnnotationsAsMap) {
+        this.introspectedClass = introspectedClass;
+        this.nestedAnnotationsAsMap = nestedAnnotationsAsMap;
+    }
+
 
     public MySimpleAnnotationMetadata(String className, int access, String enclosingClassName,
                                       String superClassName, boolean independentInnerClass, String[] interfaceNames,
@@ -46,6 +57,7 @@ public class MySimpleAnnotationMetadata {
 
     }
 
+    @Override
     public String getClassName(){
         return this.className;
     }
@@ -54,8 +66,14 @@ public class MySimpleAnnotationMetadata {
         return this.annotations;
     }
 
-    public Map<String, Object> getAnnotationAttributes(Class<?> annotationClass){
-        Object requiredType=annotationClass.getName();
+    @Override
+    public MyTypeMappedAnnotations getAnnotationss(){
+        return this.annotationss;
+    }
+
+    @Override
+    public Map<String, Object> getAnnotationAttributes(String annotationName,boolean classValuesAsString){
+        Object requiredType=annotationName;
         for(MyTypeMappedAnnotation<Annotation> myTypeMappedAnnotation:annotations){
             Class<? extends Annotation> actualType = myTypeMappedAnnotation.getAnnotationType();
             if(actualType==requiredType || actualType.getName().equals(requiredType)){
@@ -66,6 +84,7 @@ public class MySimpleAnnotationMetadata {
         return null;
     }
 
+    @Override
     public Set<MyMethodMetadata> getAnnotatedMethods(String annotationName) {
         Set<MyMethodMetadata> annotatedMethods = null;
         for (MyMethodMetadata annotatedMethod : this.annotatedMethods) {
@@ -79,15 +98,17 @@ public class MySimpleAnnotationMetadata {
         return annotatedMethods != null ? annotatedMethods : Collections.emptySet();
     }
 
+
     /**
      * 判断类是否有某个注解
      * @param requiredType 注解名or注解类
      * @return
      */
-    public boolean hasAnnotation(Object requiredType) {
+    @Override
+    public boolean hasAnnotation(String requiredType) {
         for(MyTypeMappedAnnotation<?> annotation:this.annotations){
             Class<?> type = annotation.getAnnotationType();
-            if (type == requiredType || type.getName().equals(requiredType)) {
+            if (type == (Object)requiredType || type.getName().equals(requiredType)) {
                 return true;
             }
         }
@@ -95,46 +116,39 @@ public class MySimpleAnnotationMetadata {
 
     }
 
-    /**
-     * 判断类是否包含标注了某个注解的方法
-     * @param annotationName
-     * @return
-     */
-    public boolean hasAnnotatedMethods(String annotationName){
-        return !getAnnotatedMethods(annotationName).isEmpty();
-    }
-
+    @Override
     public boolean isInterface() {
         return (this.access & Opcodes.ACC_INTERFACE) != 0;
     }
+    @Override
     public boolean isAnnotation() {
         return (this.access & Opcodes.ACC_ANNOTATION) != 0;
     }
-
+    @Override
     public boolean isAbstract() {
         return (this.access & Opcodes.ACC_ABSTRACT) != 0;
     }
-
+    @Override
     public boolean isFinal() {
         return (this.access & Opcodes.ACC_FINAL) != 0;
     }
-
+    @Override
     public boolean isIndependent() {
         return (this.enclosingClassName == null || this.independentInnerClass);
     }
-
+    @Override
     public String getEnclosingClassName() {
         return this.enclosingClassName;
     }
-
+    @Override
     public String getSuperClassName() {
         return this.superClassName;
     }
-
+    @Override
     public String[] getInterfaceNames() {
         return this.interfaceNames.clone();
     }
-
+    @Override
     public String[] getMemberClassNames() {
         String[] a=new String[memberClassNames.size()];
         return this.memberClassNames.toArray(a).clone();

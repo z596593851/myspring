@@ -1,7 +1,8 @@
 package org.hxm.myspring.postprocessor;
 
-import org.hxm.myspring.MyBeanDefinition;
-import org.hxm.myspring.MyBeanFactory;
+import org.hxm.myspring.asm.MyAnnotationMetadata;
+import org.hxm.myspring.factory.MyBeanDefinition;
+import org.hxm.myspring.factory.MyBeanFactory;
 import org.hxm.myspring.annotation.MyBean;
 import org.hxm.myspring.annotation.MyScope;
 import org.hxm.myspring.asm.MyMethodMetadata;
@@ -46,7 +47,7 @@ public class MyConfigurationClassBeanDefinitionReader {
     private static class MyConfigurationClassBeanDefinition extends MyBeanDefinition {
 
 
-        private MySimpleAnnotationMetadata annotationMetadata;
+        private MyAnnotationMetadata annotationMetadata;
 
         private MyMethodMetadata factoryMethodMetadata;
 

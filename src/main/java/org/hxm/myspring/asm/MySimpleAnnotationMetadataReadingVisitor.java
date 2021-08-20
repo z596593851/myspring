@@ -126,6 +126,7 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
+//        MyTypeMappedAnnotations annotationss=
         this.metadata = new MySimpleAnnotationMetadata(this.className, this.access,
                 this.enclosingClassName, this.superClassName, this.independentInnerClass,
                 this.interfaceNames, memberClassNames, annotations, annotatedMethods);
