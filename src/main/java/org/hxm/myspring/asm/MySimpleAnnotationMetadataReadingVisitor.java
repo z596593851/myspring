@@ -1,26 +1,18 @@
 package org.hxm.myspring.asm;
 
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
-import java.lang.annotation.Annotation;
+import org.springframework.asm.*;
+import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.ASM4;
 
 public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
     private final ClassLoader classLoader;
-
-    private static int ASM_VERSION  = 1 << 24 | 8 << 16 | 0 << 8;
-
-    private int ACC_INTERFACE = 0x0200;
 
     private String className = "";
 
@@ -37,18 +29,17 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
     private Set<String> memberClassNames = new LinkedHashSet<>(4);
 
     //一个类上标注的所有注解
-    private List<MyTypeMappedAnnotation<Annotation>> annotations = new ArrayList<>();
+    private List<MyMergedAnnotation<?>> annotations = new ArrayList<>();
 
     //一个类里所有方法上的注解
-    private List<MyMethodMetadata> annotatedMethods = new ArrayList<>();
+    private List<MySimpleMethodMetadata> annotatedMethods = new ArrayList<>();
 
     private Source source;
 
     private MySimpleAnnotationMetadata metadata;
 
     public MySimpleAnnotationMetadataReadingVisitor(ClassLoader classLoader){
-//        super(ASM_VERSION);
-        super(ASM4);
+        super(SpringAsmInfo.ASM_VERSION);
         this.classLoader = classLoader;
     }
 
@@ -59,6 +50,68 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
             this.source = source;
         }
         return source;
+    }
+
+
+    @Override
+    public void visit(int version, int access, String name, String signature, String supername, String[] interfaces) {
+        this.className = toClassName(name);
+        this.access = access;
+        if (supername != null && !isInterface(access)) {
+            this.superClassName = toClassName(supername);
+        }
+        this.interfaceNames = new String[interfaces.length];
+        for (int i = 0; i < interfaces.length; i++) {
+            this.interfaceNames[i] = toClassName(interfaces[i]);
+        }
+    }
+
+    @Override
+    public void visitSource(String s, String s1) {
+        super.visitSource(s, s1);
+    }
+
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        System.out.println("visitAnnotation:"+descriptor);
+        return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
+    }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        System.out.println("visitMethod:"+name);
+        if (isBridge(access)) {
+            return null;
+        }
+        return new MyMethodVisitor(this.classLoader, this.className,
+                access, name, descriptor, this.annotatedMethods::add);
+    }
+
+    @Override
+    public void visitEnd() {
+        String[] memberClassNames = StringUtils.toStringArray(this.memberClassNames);
+        MyMethodMetadata[] annotatedMethods = this.annotatedMethods.toArray(new MyMethodMetadata[0]);
+        MyMergedAnnotations annotations = MyMergedAnnotationsCollection.of(this.annotations);
+        this.metadata = new MySimpleAnnotationMetadata(this.className, this.access,
+                this.enclosingClassName, this.superClassName, this.independentInnerClass,
+                this.interfaceNames, memberClassNames, annotations, annotatedMethods);
+    }
+
+    private boolean isBridge(int access) {
+        return (access & Opcodes.ACC_BRIDGE) != 0;
+    }
+
+    public String toClassName(String name){
+        return name.replace("/",".");
+    }
+
+    private boolean isInterface(int access) {
+        return (access & Opcodes.ACC_INTERFACE) != 0;
+    }
+
+    public MySimpleAnnotationMetadata getMetadata(){
+        return metadata;
     }
 
     private static final class Source {
@@ -91,64 +144,6 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
         }
 
     }
-    @Override
-    public void visit(int version, int access, String name, String signature, String supername, String[] interfaces) {
-        this.className = toClassName(name);
-        this.access = access;
-        if (supername != null && !isInterface(access)) {
-            this.superClassName = toClassName(supername);
-        }
-        this.interfaceNames = new String[interfaces.length];
-        for (int i = 0; i < interfaces.length; i++) {
-            this.interfaceNames[i] = toClassName(interfaces[i]);
-        }
-    }
-
-    @Override
-    public void visitSource(String s, String s1) {
-        super.visitSource(s, s1);
-    }
-
-
-    @Override
-    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
-    }
-
-    @Override
-    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (isBridge(access)) {
-            return null;
-        }
-        return new MyMethodVisitor(this.classLoader, this.className,
-                access, name, descriptor, this.annotatedMethods::add);
-    }
-
-    @Override
-    public void visitEnd() {
-//        MyTypeMappedAnnotations annotationss=
-        this.metadata = new MySimpleAnnotationMetadata(this.className, this.access,
-                this.enclosingClassName, this.superClassName, this.independentInnerClass,
-                this.interfaceNames, memberClassNames, annotations, annotatedMethods);
-    }
-
-    private boolean isBridge(int access) {
-        return (access & Opcodes.ACC_BRIDGE) != 0;
-    }
-
-    public String toClassName(String name){
-        return name.replace("/",".");
-    }
-
-    private boolean isInterface(int access) {
-        return (access & Opcodes.ACC_INTERFACE) != 0;
-    }
-
-    public MySimpleAnnotationMetadata getMetadata(){
-        return metadata;
-    }
-
-
 
 
 

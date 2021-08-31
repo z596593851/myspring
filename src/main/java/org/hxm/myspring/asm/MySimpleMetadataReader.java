@@ -1,6 +1,9 @@
 package org.hxm.myspring.asm;
-import org.objectweb.asm.ClassReader;
+
+import org.springframework.asm.ClassReader;
 import org.springframework.core.io.Resource;
+
+
 import java.io.IOException;
 
 public class MySimpleMetadataReader {
@@ -9,7 +12,7 @@ public class MySimpleMetadataReader {
 
     private  Resource resource;
 
-    private final MySimpleAnnotationMetadata annotationMetadata;
+    private final MyAnnotationMetadata annotationMetadata;
 
 
     public MySimpleMetadataReader(Resource resource) throws IOException {
@@ -36,8 +39,12 @@ public class MySimpleMetadataReader {
         this.annotationMetadata = visitor.getMetadata();
     }
 
-    public MySimpleAnnotationMetadata getAnnotationMetadata(){
+    public MyAnnotationMetadata getAnnotationMetadata(){
         return annotationMetadata;
+    }
+
+    public MyClassMetadata getClassMetadata() {
+        return this.annotationMetadata;
     }
 
     public Resource getResource() {

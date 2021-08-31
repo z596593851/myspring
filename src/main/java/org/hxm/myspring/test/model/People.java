@@ -1,6 +1,6 @@
 package org.hxm.myspring.test.model;
 
-import org.hxm.myspring.annotation.MyComponent;
+import org.hxm.myspring.stereotype.MyComponent;
 import org.hxm.myspring.annotation.MyValue;
 
 @MyComponent

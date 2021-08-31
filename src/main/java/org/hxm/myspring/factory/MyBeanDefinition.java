@@ -1,7 +1,6 @@
 package org.hxm.myspring.factory;
 
 import org.hxm.myspring.asm.MyAnnotationMetadata;
-import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.asm.MyStandardAnnotationMetadata;
 import org.hxm.myspring.utils.MyClassUtil;
@@ -78,6 +77,16 @@ public class MyBeanDefinition {
     }
 
     public MyBeanDefinition(){}
+
+    public MyBeanDefinition(MyAnnotationMetadata metadata){
+        if (metadata instanceof MyStandardAnnotationMetadata) {
+            this.setBeanClass(((MyStandardAnnotationMetadata)metadata).getIntrospectedClass());
+        } else {
+            this.setBeanClassName(metadata.getClassName());
+        }
+
+        this.metadata = metadata;
+    }
 
     public MyBeanDefinition(MySimpleMetadataReader metadataReader){
         this.metadata=metadataReader.getAnnotationMetadata();

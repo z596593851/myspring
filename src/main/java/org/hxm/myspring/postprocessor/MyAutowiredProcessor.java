@@ -84,7 +84,12 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
 
     public Annotation findAutowiredAnnotation(AccessibleObject ao){
         for(Class<?extends Annotation> type:this.autowiredAnnotationTypes){
-            Annotation ann=ao.getDeclaredAnnotations()[0];
+            //todo 利用注解体系获取注解，而不是直接获取。记得改写
+            Annotation[] declaredAnnotations = ao.getDeclaredAnnotations();
+            if(declaredAnnotations==null || declaredAnnotations.length==0){
+                return null;
+            }
+            Annotation ann=declaredAnnotations[0];
             if(ann.annotationType()==type){
                 return ann;
             }

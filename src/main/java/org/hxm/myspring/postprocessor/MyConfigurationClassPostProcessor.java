@@ -1,12 +1,11 @@
 package org.hxm.myspring.postprocessor;
 
+import org.hxm.myspring.annotation.*;
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.factory.MyBeanDefinition;
 import org.hxm.myspring.factory.MyBeanDefinitionHolder;
 import org.hxm.myspring.factory.MyBeanFactory;
-import org.hxm.myspring.annotation.*;
-import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
-import org.springframework.context.annotation.Bean;
+import org.hxm.myspring.stereotype.MyComponent;
 
 import java.util.*;
 
@@ -38,7 +37,7 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
     }
 
     public void processConfigBeanDefinitions(MyBeanFactory registry) {
-        MyConfigurationClassParser parser = new MyConfigurationClassParser();
+        MyConfigurationClassParser parser = new MyConfigurationClassParser(registry);
         List<String> candidateNames = registry.getBeanDefinitionNames();
         //拿到所有被MyBeanDefinition标注的类
         List<MyBeanDefinitionHolder> configCandidates=new ArrayList<>();
@@ -50,12 +49,14 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
 
         }
         parser.parse(configCandidates);
+        //todo 解析出了重复的 记得查找原因
         Set<MyConfigurationClass> configClasses=parser.getConfigurationClasses();
         if(this.reader==null){
             this.reader=new MyConfigurationClassBeanDefinitionReader(registry);
         }
         //解析被@MyBean标注的方法
         this.reader.loadBeanDefinitions(configClasses);
+        configCandidates.clear();
     }
 
     public boolean checkConfigurationClassCandidate(MyBeanDefinition beanDef){
@@ -86,7 +87,7 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
                 return true;
             }
         }
-        return metadata.hasAnnotatedMethods(Bean.class.getName());
+        return metadata.hasAnnotatedMethods(MyBean.class.getName());
     }
 
 }

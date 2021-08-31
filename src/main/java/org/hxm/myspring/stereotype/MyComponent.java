@@ -1,4 +1,4 @@
-package org.hxm.myspring.annotation;
+package org.hxm.myspring.stereotype;
 
 import java.lang.annotation.*;
 

@@ -1,50 +1,64 @@
 package org.hxm.myspring.asm;
 
+import org.hxm.myspring.annotation.MyAbstractMergedAnnotation;
 import org.hxm.myspring.utils.MyClassUtil;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.function.Function;
 
-public class MyTypeMappedAnnotation<A extends Annotation>  {
+/**
+ * 一般形式的注解
+ * @param <A> 注解的类型
+ */
+public class MyTypeMappedAnnotation<A extends Annotation> extends MyAbstractMergedAnnotation<A> {
 
     private MyAnnotationTypeMapping mapping;
     private final ClassLoader classLoader;
     private final Object source;
-    //一个注解对应的key-value，可以是类上的注解也可以是方法上的
     private final Object rootAttributes;
     private MyValueExtractor valueExtractor;
     private int aggregateIndex;
-    private Class<A> annotationType;
     private boolean useMergedValues;
 
     public Class<A> getAnnotationType() {
-        return annotationType;
+        return (Class<A>) this.mapping.getAnnotationType();
+    }
+
+    @Override
+    public int getDistance() {
+        return this.mapping.getDistance();
     }
 
     public Object getAttributes() {
         return rootAttributes;
     }
 
-    public MyTypeMappedAnnotation(ClassLoader classLoader, Object source, Class<A> annotationType, Object attributes) {
-        this.classLoader = classLoader;
-        this.source = source;
-        this.annotationType = annotationType;
-        this.rootAttributes = attributes;
-        this.useMergedValues = true;
-    }
-
-    public MyTypeMappedAnnotation( MyAnnotationTypeMapping mapping, ClassLoader classLoader, Object source, Object rootAttributes, MyValueExtractor valueExtractor, int aggregateIndex) {
+    public MyTypeMappedAnnotation(MyAnnotationTypeMapping mapping, ClassLoader classLoader, Object source, Object rootAttributes, MyValueExtractor valueExtractor, int aggregateIndex) {
         this.mapping = mapping;
         this.classLoader = classLoader;
         this.source = source;
         this.rootAttributes = rootAttributes;
         this.valueExtractor = valueExtractor;
         this.aggregateIndex = aggregateIndex;
+        this.useMergedValues = true;
     }
 
+    static <A extends Annotation> MyTypeMappedAnnotation<A> createIfPossible(MyAnnotationTypeMapping mapping, MyMergedAnnotation<?> annotation) {
+
+        if (annotation instanceof MyTypeMappedAnnotation) {
+            MyTypeMappedAnnotation<?> typeMappedAnnotation = (MyTypeMappedAnnotation<?>) annotation;
+            return new MyTypeMappedAnnotation<>(mapping,
+                    null,
+                    typeMappedAnnotation.source,
+                    typeMappedAnnotation.rootAttributes,
+                    typeMappedAnnotation.valueExtractor,
+                    typeMappedAnnotation.aggregateIndex);
+        }
+        return createIfPossible(mapping, annotation.getSource(), annotation.synthesize(),
+                annotation.getAggregateIndex());
+    }
 
     static <A extends Annotation> MyTypeMappedAnnotation<A> createIfPossible(
             MyAnnotationTypeMapping mapping, Object source, Annotation annotation, int aggregateIndex) {
@@ -52,19 +66,28 @@ public class MyTypeMappedAnnotation<A extends Annotation>  {
         return new MyTypeMappedAnnotation<>(mapping,null,source,annotation, MyClassUtil::invokeMethod,aggregateIndex);
     }
 
+    @Override
     public boolean isPresent() {
         return true;
     }
 
+    @Override
     public Class<A> getType() {
         return (Class<A>) this.mapping.getAnnotationType();
     }
 
-    public MyAnnotationAttributes asAnnotationAttributes(){
-        return asMap(mergedAnnotation -> new MyAnnotationAttributes(mergedAnnotation.getType()));
+    @Override
+    public int getAggregateIndex() {
+        return this.aggregateIndex;
     }
 
-    public <T extends Map<String, Object>> T asMap(Function<MyTypeMappedAnnotation<?>, T> factory) {
+    @Override
+    public Object getSource() {
+        return this.source;
+    }
+
+    @Override
+    public <T extends Map<String, Object>> T asMap(Function<MyMergedAnnotation<?>, T> factory) {
         T map = factory.apply(this);
         MyAttributeMethods attributes = this.mapping.getAttributes();
         for (int i = 0; i < attributes.size(); i++) {
@@ -79,12 +102,12 @@ public class MyTypeMappedAnnotation<A extends Annotation>  {
     }
 
     private <T extends Map<String, Object>> Object adaptValueForMapOptions(Method attribute, Object value,
-                                                                           Class<?> mapType, Function<MyTypeMappedAnnotation<?>, T> factory) {
-        if(value instanceof MyTypeMappedAnnotation){
+                                                                           Class<?> mapType, Function<MyMergedAnnotation<?>, T> factory) {
+        if(value instanceof MyMergedAnnotation){
             MyTypeMappedAnnotation<?> annotation=(MyTypeMappedAnnotation<?>)value;
             return annotation.asMap(factory);
         }
-        if(value instanceof MyTypeMappedAnnotation[]){
+        if(value instanceof MyMergedAnnotation[]){
             MyTypeMappedAnnotation<?>[] annotations=(MyTypeMappedAnnotation<?>[])value;
             Object result = Array.newInstance(mapType, annotations.length);
             for (int i = 0; i < annotations.length; i++) {
@@ -111,6 +134,10 @@ public class MyTypeMappedAnnotation<A extends Annotation>  {
             if (mappedIndex == -1 && useConventionMapping) {
                 mappedIndex = this.mapping.getConventionMapping(attributeIndex);
             }
+            if (mappedIndex != -1) {
+                mapping = mapping.getRoot();
+                attributeIndex = mappedIndex;
+            }
         }
         if (attributeIndex == -1) {
             return null;
@@ -133,5 +160,14 @@ public class MyTypeMappedAnnotation<A extends Annotation>  {
             value = MyClassUtil.invokeMethod(attribute, this.mapping.getAnnotation());
         }
         return value;
+    }
+
+    static Object extractFromMap(Method attribute, Object map) {
+        return (map != null ? ((Map<String, ?>) map).get(attribute.getName()) : null);
+    }
+
+    @Override
+    protected A createSynthesized() {
+        return (A) this.rootAttributes;
     }
 }

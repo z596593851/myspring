@@ -5,8 +5,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 
+/**
+ * 注解的元信息（MergedAnnotation）
+ */
 public class MyAnnotationTypeMapping {
     private final MyAnnotationTypeMapping source;
+    private final MyAnnotationTypeMapping root;
     private final Class<? extends Annotation> annotationType;
     private final Annotation annotation;
     private final MyAttributeMethods attributes;
@@ -18,22 +22,41 @@ public class MyAnnotationTypeMapping {
 
     public MyAnnotationTypeMapping(MyAnnotationTypeMapping source, Class<? extends Annotation> annotationType, Annotation annotation) {
         this.source = source;
+        this.root = (source != null ? source.getRoot() : this);
         this.distance = (source == null ? 0 : source.getDistance() + 1);
         this.annotationType = annotationType;
         this.annotation = annotation;
         this.attributes=MyAttributeMethods.forAnnotationType(annotationType);
         this.aliasMappings = filledIntArray(this.attributes.size());
         this.annotationValueMappings = filledIntArray(this.attributes.size());
+        //addConventionMappings()赋值
         this.conventionMappings = filledIntArray(this.attributes.size());
+        //addConventionAnnotationValues()赋值
         this.annotationValueSource = new MyAnnotationTypeMapping[this.attributes.size()];
+        addConventionMappings();
         addConventionAnnotationValues();
+    }
+
+    private void addConventionMappings() {
+        if (this.distance == 0) {
+            return;
+        }
+        MyAttributeMethods rootAttributes = this.root.getAttributes();
+        int[] mappings = this.conventionMappings;
+        for (int i = 0; i < mappings.length; i++) {
+            String name = this.attributes.get(i).getName();
+            int mapped = rootAttributes.indexOf(name);
+            if (!MyMergedAnnotation.VALUE.equals(name) && mapped != -1) {
+                mappings[i] = mapped;
+            }
+        }
     }
 
 
     private void addConventionAnnotationValues() {
         for (int i = 0; i < this.attributes.size(); i++) {
             Method attribute = this.attributes.get(i);
-            boolean isValueAttribute = "value".equals(attribute.getName());
+            boolean isValueAttribute = MyMergedAnnotation.VALUE.equals(attribute.getName());
             MyAnnotationTypeMapping mapping = this;
             while (mapping != null && mapping.distance > 0) {
                 int mapped = mapping.getAttributes().indexOf(attribute.getName());
@@ -46,9 +69,7 @@ public class MyAnnotationTypeMapping {
         }
     }
 
-    private boolean isBetterConventionAnnotationValue(int index, boolean isValueAttribute,
-                                                      MyAnnotationTypeMapping mapping) {
-
+    private boolean isBetterConventionAnnotationValue(int index, boolean isValueAttribute, MyAnnotationTypeMapping mapping) {
         if (this.annotationValueMappings[index] == -1) {
             return true;
         }
@@ -77,6 +98,9 @@ public class MyAnnotationTypeMapping {
 
     public MyAttributeMethods getAttributes() {
         return this.attributes;
+    }
+    public MyAnnotationTypeMapping getRoot(){
+        return this.root;
     }
 
     public int getAliasMapping(int attributeIndex) {

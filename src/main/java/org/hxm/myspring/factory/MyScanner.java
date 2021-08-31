@@ -1,6 +1,6 @@
 package org.hxm.myspring.factory;
 
-import org.hxm.myspring.annotation.MyComponent;
+import org.hxm.myspring.stereotype.MyComponent;
 import org.hxm.myspring.annotation.MyConfiguration;
 import org.hxm.myspring.annotation.MyScopeMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;

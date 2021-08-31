@@ -1,20 +1,24 @@
 package org.hxm.myspring.asm;
 
-import org.springframework.core.annotation.AnnotationFilter;
+import org.hxm.myspring.annotation.MyAnnotationFilter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+/**
+ * 一个注解里的子注解的{@link MyAnnotationTypeMapping}
+ */
 public class MyAnnotationTypeMappings {
 
     private final List<MyAnnotationTypeMapping> mappings;
+    private final MyAnnotationFilter filter;
 
-    public MyAnnotationTypeMappings(Class<? extends Annotation> annotationType){
+    public MyAnnotationTypeMappings(Class<? extends Annotation> annotationType, MyAnnotationFilter filter){
         this.mappings = new ArrayList<>();
+        this.filter=filter;
         addAllMappings(annotationType);
-//        this.mappings.forEach(MyAnnotationTypeMapping::afterAllMappingsSet);
     }
 
     private void addAllMappings(Class<? extends Annotation> annotationType) {
@@ -39,7 +43,8 @@ public class MyAnnotationTypeMappings {
 
     private boolean isMappable(MyAnnotationTypeMapping source, Annotation metaAnnotation){
         return (metaAnnotation!=null &&
-                !AnnotationFilter.PLAIN.matches(source.getAnnotationType()) &&
+                !this.filter.matches(metaAnnotation) &&
+                !MyAnnotationFilter.PLAIN.matches(source.getAnnotationType()) &&
                 !isAlreadyMapped(source, metaAnnotation));
     }
 

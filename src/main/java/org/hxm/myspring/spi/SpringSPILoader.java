@@ -2,7 +2,6 @@ package org.hxm.myspring.spi;
 
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -10,17 +9,19 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
-public class SpringSPIMain {
+public class SpringSPILoader {
 
     private static final Map<ClassLoader, MultiValueMap<String, String>> cache = new ConcurrentReferenceHashMap<>();
-    public static final String FACTORIES_RESOURCE_LOCATION = "META-INF/spring.factories";
+    public static final String FACTORIES_RESOURCE_LOCATION = "META-INF/myspring.factories";
 
-    private static Map<String, List<String>> loadSpringFactories(@Nullable ClassLoader classLoader) {
+    public static List<String> loadFactoryNames(Class<?> factoryType, ClassLoader classLoader) {
+        String factoryTypeName = factoryType.getName();
+        return loadSpringFactories(classLoader).getOrDefault(factoryTypeName, Collections.emptyList());
+    }
+
+    private static Map<String, List<String>> loadSpringFactories(ClassLoader classLoader) {
         MultiValueMap<String, String> result = cache.get(classLoader);
         if (result != null) {
             return result;
@@ -52,7 +53,7 @@ public class SpringSPIMain {
     }
 
     public static void main(String[] args) {
-        Map<String, List<String>> map=loadSpringFactories(SpringSPIMain.class.getClassLoader());
+        Map<String, List<String>> map=loadSpringFactories(SpringSPILoader.class.getClassLoader());
         for(Map.Entry<String, List<String>> entry:map.entrySet()){
             System.out.println(entry.getKey());
             System.out.println("------");

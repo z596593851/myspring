@@ -1,16 +1,17 @@
 package org.hxm.myspring.asm;
 
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.MethodVisitor;
+
+import org.springframework.asm.AnnotationVisitor;
+import org.springframework.asm.MethodVisitor;
+import org.springframework.asm.SpringAsmInfo;
 import org.springframework.asm.Type;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static org.objectweb.asm.Opcodes.ASM4;
+
 
 public class MyMethodVisitor extends MethodVisitor {
 
@@ -24,15 +25,15 @@ public class MyMethodVisitor extends MethodVisitor {
 
     private final String descriptor;
 
-    private final List<MyTypeMappedAnnotation<Annotation>> annotations = new ArrayList<>(4);
+    private final List<MyMergedAnnotation<?>> annotations = new ArrayList<>(4);
 
-    private final Consumer<MyMethodMetadata> consumer;
+    private final Consumer<MySimpleMethodMetadata> consumer;
 
     private Source source;
 
     public MyMethodVisitor(ClassLoader classLoader, String declaringClassName,
-                           int access, String name, String descriptor, Consumer<MyMethodMetadata> consumer) {
-        super(ASM4);
+                           int access, String name, String descriptor, Consumer<MySimpleMethodMetadata> consumer) {
+        super(SpringAsmInfo.ASM_VERSION);
         this.classLoader = classLoader;
         this.declaringClassName = declaringClassName;
         this.access = access;
@@ -43,6 +44,7 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        System.out.println("method's visitAnnotation:"+descriptor);
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }
 
@@ -50,7 +52,8 @@ public class MyMethodVisitor extends MethodVisitor {
     public void visitEnd() {
         if (!this.annotations.isEmpty()) {
             String returnTypeName = Type.getReturnType(this.descriptor).getClassName();
-            MyMethodMetadata metadata = new MyMethodMetadata(this.name,
+            MyMergedAnnotations annotations = MyMergedAnnotationsCollection.of(this.annotations);
+            MySimpleMethodMetadata metadata = new MySimpleMethodMetadata(this.name,
                     this.access, this.declaringClassName, returnTypeName, annotations);
             this.consumer.accept(metadata);
         }

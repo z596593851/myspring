@@ -1,5 +1,7 @@
 package org.hxm.myspring.annotation;
 
+import org.hxm.myspring.stereotype.MyComponent;
+
 import java.lang.annotation.*;
 
 /**

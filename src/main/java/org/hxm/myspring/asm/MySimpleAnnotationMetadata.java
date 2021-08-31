@@ -2,49 +2,35 @@ package org.hxm.myspring.asm;
 
 
 import org.objectweb.asm.Opcodes;
-
-import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
-    private String className;
+    private final String className;
 
-    private int access;
+    private Set<String> annotationTypes;
 
-    private String enclosingClassName;
+    private final int access;
 
-    private String superClassName;
+    private final String enclosingClassName;
 
-    private boolean independentInnerClass;
+    private final String superClassName;
 
-    private String[] interfaceNames;
+    private final boolean independentInnerClass;
 
-    private Set<String> memberClassNames;
+    private final String[] interfaceNames;
 
-    private Class<?> introspectedClass;
+    private final String[] memberClassNames;
 
-    private boolean nestedAnnotationsAsMap;
+    private final MyMergedAnnotations annotations;
 
-    /**
-     * 一个类上标注的所有注解,如compoment,scope
-     */
-    private List<MyTypeMappedAnnotation<Annotation>> annotations;
-
-    private MyTypeMappedAnnotations annotationss;
-    /**
-     * 一个类里所有方法上的注解,如bean
-     */
-    private List<MyMethodMetadata> annotatedMethods;
-
-    public MySimpleAnnotationMetadata(Class<?> introspectedClass, boolean nestedAnnotationsAsMap) {
-        this.introspectedClass = introspectedClass;
-        this.nestedAnnotationsAsMap = nestedAnnotationsAsMap;
-    }
+    private final MyMethodMetadata[] annotatedMethods;
 
 
     public MySimpleAnnotationMetadata(String className, int access, String enclosingClassName,
                                       String superClassName, boolean independentInnerClass, String[] interfaceNames,
-                                      Set<String> memberClassNames, List<MyTypeMappedAnnotation<Annotation>> annotations,List<MyMethodMetadata> annotatedMethods){
+                                      String[] memberClassNames, MyMergedAnnotations annotations, MyMethodMetadata[] annotatedMethods){
         this.className = className;
         this.access = access;
         this.enclosingClassName = enclosingClassName;
@@ -54,7 +40,6 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
         this.memberClassNames = memberClassNames;
         this.annotations = annotations;
         this.annotatedMethods=annotatedMethods;
-
     }
 
     @Override
@@ -62,26 +47,9 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
         return this.className;
     }
 
-    public List<MyTypeMappedAnnotation<Annotation>> getAnnotations(){
+    @Override
+    public MyMergedAnnotations getAnnotations(){
         return this.annotations;
-    }
-
-    @Override
-    public MyTypeMappedAnnotations getAnnotationss(){
-        return this.annotationss;
-    }
-
-    @Override
-    public Map<String, Object> getAnnotationAttributes(String annotationName,boolean classValuesAsString){
-        Object requiredType=annotationName;
-        for(MyTypeMappedAnnotation<Annotation> myTypeMappedAnnotation:annotations){
-            Class<? extends Annotation> actualType = myTypeMappedAnnotation.getAnnotationType();
-            if(actualType==requiredType || actualType.getName().equals(requiredType)){
-                Map<String, Object> map=(Map<String, Object>)myTypeMappedAnnotation.getAttributes();
-                return map;
-            }
-        }
-        return null;
     }
 
     @Override
@@ -98,23 +66,17 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
         return annotatedMethods != null ? annotatedMethods : Collections.emptySet();
     }
 
-
-    /**
-     * 判断类是否有某个注解
-     * @param requiredType 注解名or注解类
-     * @return
-     */
     @Override
-    public boolean hasAnnotation(String requiredType) {
-        for(MyTypeMappedAnnotation<?> annotation:this.annotations){
-            Class<?> type = annotation.getAnnotationType();
-            if (type == (Object)requiredType || type.getName().equals(requiredType)) {
-                return true;
-            }
+    public Set<String> getAnnotationTypes() {
+        Set<String> annotationTypes = this.annotationTypes;
+        if (annotationTypes == null) {
+            annotationTypes = Collections.unmodifiableSet(
+                    MyAnnotationMetadata.super.getAnnotationTypes());
+            this.annotationTypes = annotationTypes;
         }
-        return false;
-
+        return annotationTypes;
     }
+
 
     @Override
     public boolean isInterface() {
@@ -150,8 +112,7 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
     }
     @Override
     public String[] getMemberClassNames() {
-        String[] a=new String[memberClassNames.size()];
-        return this.memberClassNames.toArray(a).clone();
+        return this.memberClassNames.clone();
     }
 
 }
