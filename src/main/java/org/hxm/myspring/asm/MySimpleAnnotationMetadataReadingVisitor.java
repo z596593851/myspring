@@ -74,13 +74,11 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        System.out.println("visitAnnotation:"+descriptor);
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        System.out.println("visitMethod:"+name);
         if (isBridge(access)) {
             return null;
         }

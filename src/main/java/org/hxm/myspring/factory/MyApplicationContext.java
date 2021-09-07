@@ -85,6 +85,12 @@ public class MyApplicationContext {
         MyTomcatWebServer webServer=this.webServer;
         if(webServer==null){
             MyTomcatServletWebServerFactory factory=new MyTomcatServletWebServerFactory();
+            //todo 注册myServletRegistrationBean
+            try {
+                beanFactory.getBean("myServletRegistrationBean");
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
             this.webServer=factory.getWebServer(getSelfInitializer());
             //todo 注册bean
             beanFactory.registerSingleton("webServerStartStop",

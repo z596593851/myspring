@@ -1,11 +1,8 @@
 package org.hxm.myspring.web;
 
-import org.springframework.util.Assert;
+import org.apache.catalina.core.ApplicationServletRegistration;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
+import javax.servlet.*;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -25,8 +22,15 @@ public class MyServletRegistrationBean<T extends Servlet> implements MyServletCo
 
     @Override
     public void onStartup(ServletContext servletContext) throws ServletException {
-        ServletRegistration.Dynamic registration = servletContext.addServlet(getName(), this.servlet);
+        MultipartConfigElement multipartConfig=new MultipartConfigElement("",1048576,10485760,0);
+        //关键
+        String[] urlMapping=new String[]{"/"};
+        ApplicationServletRegistration registration = (ApplicationServletRegistration)servletContext.addServlet(getName(), this.servlet);
         registration.setAsyncSupported(true);
+        registration.addMapping(urlMapping);
+        registration.setLoadOnStartup(-1);
+        registration.setMultipartConfig(multipartConfig);
+
     }
 
     public void addUrlMappings(String... urlMappings) {

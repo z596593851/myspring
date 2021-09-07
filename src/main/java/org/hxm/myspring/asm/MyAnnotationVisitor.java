@@ -66,8 +66,6 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     @Override
     public void visit(String name, Object value) {
-        //todo asm失效
-        System.out.println("name-"+name+"-value"+value);
         if (value instanceof Type) {
             value = ((Type) value).getClassName();
         }
@@ -76,13 +74,11 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     @Override
     public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-        System.out.println("name-"+name+"-descriptor"+descriptor);
         return visitAnnotation(descriptor, annotation -> this.attributes.put(name, annotation));
     }
 
     @Override
     public AnnotationVisitor visitArray(String name) {
-        System.out.println("name-"+name);
         return new ArrayVisitor(value -> this.attributes.put(name, value));
     }
 

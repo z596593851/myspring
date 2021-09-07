@@ -9,7 +9,15 @@ import java.io.IOException;
 public class MyDispatcherServlet extends HttpServlet {
 
     @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("service");
+        super.service(req, resp);
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         System.out.println("doGet");
     }
+
+
 }

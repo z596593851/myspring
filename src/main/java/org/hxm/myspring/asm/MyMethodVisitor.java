@@ -44,7 +44,6 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        System.out.println("method's visitAnnotation:"+descriptor);
         return MyAnnotationVisitor.get(this.classLoader, this::getSource, descriptor, visible, this.annotations::add);
     }
 

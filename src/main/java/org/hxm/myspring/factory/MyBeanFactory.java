@@ -368,12 +368,12 @@ public class MyBeanFactory {
         try {
             for(String beanName:this.beanDefinitionNames){
                 MyBeanDefinition beanDefinition=getBeanDefinition(beanName);
-//                boolean isFactoryBean=isFactoryBean(beanName, beanDefinition);
-//                boolean matchFound = false;
-//                if(!isFactoryBean){
-//                    matchFound = isTypeMatch(beanName, type);
-//                }
-                if (isTypeMatch(beanName, type)) {
+                boolean isFactoryBean=isFactoryBean(beanName, beanDefinition);
+                boolean matchFound = false;
+                if(!isFactoryBean){
+                    matchFound = isTypeMatch(beanName, type);
+                }
+                if (matchFound) {
                     result.add(beanName);
                 }
             }
