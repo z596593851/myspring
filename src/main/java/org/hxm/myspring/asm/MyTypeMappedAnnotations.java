@@ -29,6 +29,15 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
     }
 
     @Override
+    public boolean isDirectlyPresent(String annotationType) {
+        if (this.annotationFilter.matches(annotationType)) {
+            return false;
+        }
+        return Boolean.TRUE.equals(scan(annotationType,
+                MyTypeMappedAnnotations.IsPresent.get(this.annotationFilter, true)));
+    }
+
+    @Override
     public boolean isPresent(String annotationType) {
         if (this.annotationFilter.matches(annotationType)) {
             return false;
@@ -119,6 +128,15 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
      * 注解处理器-判断注解 requiredType 是否出现在 annotations 中
      */
     private static final class IsPresent implements MyAnnotationsProcessor<Object, Boolean> {
+        private static final IsPresent[] SHARED;
+        static {
+            SHARED = new IsPresent[4];
+            SHARED[0] = new IsPresent(MyAnnotationFilter.PLAIN, true);
+            SHARED[1] = new IsPresent(MyAnnotationFilter.PLAIN, false);
+            SHARED[2] = new IsPresent(MyAnnotationFilter.PLAIN, true);
+            SHARED[3] = new IsPresent(MyAnnotationFilter.PLAIN, false);
+        }
+
         private final MyAnnotationFilter annotationFilter;
         private final boolean directOnly;
         IsPresent(MyAnnotationFilter annotationFilter,boolean directOnly){
@@ -149,6 +167,15 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
                 }
             }
             return null;
+        }
+
+        static IsPresent get(MyAnnotationFilter annotationFilter, boolean directOnly) {
+
+            // Use a single shared instance for common combinations
+            if (annotationFilter == MyAnnotationFilter.PLAIN) {
+                return SHARED[directOnly ? 0 : 1];
+            }
+            return new IsPresent(annotationFilter, directOnly);
         }
     }
 

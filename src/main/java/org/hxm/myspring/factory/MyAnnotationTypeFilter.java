@@ -1,12 +1,11 @@
-package org.hxm.myspring.utils;
+package org.hxm.myspring.factory;
 
 import org.hxm.myspring.asm.MyAnnotationMetadata;
-import org.hxm.myspring.asm.MySimpleAnnotationMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;
 
 import java.lang.annotation.Annotation;
 
-public class MyAnnotationTypeFilter {
+public class MyAnnotationTypeFilter extends MyAbstractTypeFilter {
 
     private Class<? extends Annotation> annotationType;
 
@@ -14,7 +13,8 @@ public class MyAnnotationTypeFilter {
         this.annotationType=annotationType;
     }
 
-    public boolean match(MySimpleMetadataReader metadataReader) {
+    @Override
+    protected boolean matchSelf(MySimpleMetadataReader metadataReader) {
         MyAnnotationMetadata metadata = metadataReader.getAnnotationMetadata();
         return metadata.hasAnnotation(this.annotationType.getName());
     }

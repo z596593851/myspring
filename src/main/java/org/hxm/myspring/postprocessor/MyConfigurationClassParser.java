@@ -1,17 +1,15 @@
 package org.hxm.myspring.postprocessor;
 
-import org.hxm.myspring.annotation.MyBean;
-import org.hxm.myspring.annotation.MyDeferredImportSelector;
-import org.hxm.myspring.annotation.MyImport;
-import org.hxm.myspring.annotation.MyImportSelector;
+import org.hxm.myspring.annotation.*;
 import org.hxm.myspring.asm.*;
-import org.hxm.myspring.factory.MyBeanDefinitionHolder;
-import org.hxm.myspring.factory.MyBeanFactory;
+import org.hxm.myspring.factory.*;
+import org.hxm.myspring.utils.MyAnnotationConfigUtils;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -24,7 +22,7 @@ import java.util.function.Predicate;
  */
 public class MyConfigurationClassParser {
 
-    private final MyBeanFactory registry;
+    private final MyBeanDefinitionRegistry registry;
     private static final Predicate<String> DEFAULT_EXCLUSION_FILTER = className ->
             (className.startsWith("java.lang.annotation.") || className.startsWith("org.hxm.myspring.stereotype."));
     private final MySourceClass objectSourceClass = new MySourceClass(Object.class);
@@ -32,11 +30,11 @@ public class MyConfigurationClassParser {
     private final MyDeferredImportSelectorHandler deferredImportSelectorHandler = new MyDeferredImportSelectorHandler();
     private final ImportStack importStack = new ImportStack();
 
-    public MyConfigurationClassParser(MyBeanFactory registry){
+    public MyConfigurationClassParser(MyBeanDefinitionRegistry registry){
         this.registry=registry;
     }
 
-    public void parse(List<MyBeanDefinitionHolder> configCandidates){
+    public void parse(Set<MyBeanDefinitionHolder> configCandidates){
         for(MyBeanDefinitionHolder beanDefinitionHolder:configCandidates){
             //将标注了@MyConfiguration的类封装成MyConfigurationClass
             processConfigurationClass(new MyConfigurationClass(beanDefinitionHolder.getBeanDefinition().getMetadata(),beanDefinitionHolder.getBeanName()),
@@ -48,19 +46,68 @@ public class MyConfigurationClassParser {
 
     public void processConfigurationClass(MyConfigurationClass configClass, Predicate<String> filter){
         try {
-            MyAnnotationMetadata origional=configClass.getMetadata();
-            //todo 处理import
-            MySourceClass sourceClass=asSourceClass(configClass,DEFAULT_EXCLUSION_FILTER);
-            processImports(configClass, sourceClass,getImports(sourceClass),DEFAULT_EXCLUSION_FILTER,true);
-            Set<MyMethodMetadata> beanMethods = origional.getAnnotatedMethods(MyBean.class.getName());
-            //提取MyConfigurationClass中所有标注了@MyBean的方法
-            for(MyMethodMetadata methodMetadata:beanMethods){
-                configClass.addBeanMethod(new MyBeanMethod(methodMetadata,configClass));
+            MyConfigurationClass existingClass = this.configurationClasses.get(configClass);
+            if (existingClass != null) {
+                if (configClass.isImported()) {
+                    if (existingClass.isImported()) {
+                        existingClass.mergeImportedBy(configClass);
+                    }
+                    // Otherwise ignore new imported config class; existing non-imported class overrides it.
+                    return;
+                } else {
+                    // Explicit bean definition found, probably replacing an import.
+                    // Let's remove the old one and go with the new one.
+                    this.configurationClasses.remove(configClass);
+                }
             }
+            MySourceClass sourceClass=asSourceClass(configClass,DEFAULT_EXCLUSION_FILTER);
+            do {
+                sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
+            }
+            while (sourceClass != null);
             this.configurationClasses.put(configClass,configClass);
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private MySourceClass doProcessConfigurationClass(MyConfigurationClass configClass, MySourceClass sourceClass,  Predicate<String> filter) throws IOException {
+        MyAnnotationMetadata origional=configClass.getMetadata();
+        //todo 处理ComponentScan
+        MyAnnotationAttributes componentScan = MyAnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), MyComponentScan.class);
+        if(componentScan!=null){
+            Set<String> basePackages = new LinkedHashSet<>();
+            String[] basePackagesArray=componentScan.getStringArray("basePackages");
+            for(String pkg : basePackagesArray){
+                basePackages.add(pkg);
+            }
+            if (basePackages.isEmpty()) {
+                basePackages.add(MyClassUtil.getPackageName(sourceClass.getMetadata().getClassName()));
+            }
+            MyScanner scanner=new MyScanner(this.registry);
+            //todo 将当前类设置为filter 防止循环扫描
+            scanner.addExcludeFilter(new MyAbstractTypeFilter() {
+                @Override
+                protected boolean matchClassName(String className) {
+                    return sourceClass.getMetadata().getClassName().equals(className);
+                }
+            });
+            Set<MyBeanDefinitionHolder> scannedBeanDefinitions = scanner.scan(StringUtils.toStringArray(basePackages));
+            for(MyBeanDefinitionHolder holder:scannedBeanDefinitions){
+                processConfigurationClass(new MyConfigurationClass(new MySimpleMetadataReader(new ClassPathResource(MyClassUtil.convertClassNameToResourcePath(holder.getBeanDefinition().getBeanClassName())+".class",
+                        MyClassUtil.getDefaultClassLoader())),holder.getBeanName()),DEFAULT_EXCLUSION_FILTER);
+            }
+
+        }
+        processImports(configClass, sourceClass,getImports(sourceClass),DEFAULT_EXCLUSION_FILTER,true);
+        Set<MyMethodMetadata> beanMethods = origional.getAnnotatedMethods(MyBean.class.getName());
+        //提取MyConfigurationClass中所有标注了@MyBean的方法
+        for(MyMethodMetadata methodMetadata:beanMethods){
+            configClass.addBeanMethod(new MyBeanMethod(methodMetadata,configClass));
+        }
+        return null;
     }
 
     private void processImports(MyConfigurationClass configClass, MySourceClass currentSourceClass,
@@ -73,7 +120,7 @@ public class MyConfigurationClassParser {
             for (MySourceClass candidate : importCandidates) {
                 if(candidate.isAssignable(MyImportSelector.class)){
                     Class<?> candidateClass = candidate.loadClass();
-                    MyImportSelector selector=MyClassUtil.instantiateClass(candidateClass,MyImportSelector.class, registry);
+                    MyImportSelector selector=MyClassUtil.instantiateClass(candidateClass,MyImportSelector.class, (MyBeanFactory) registry);
                     if(selector instanceof MyDeferredImportSelector){
                         this.deferredImportSelectorHandler.handle(configClass,(MyDeferredImportSelector)selector);
                     }
@@ -328,7 +375,7 @@ public class MyConfigurationClassParser {
 
         private MyDeferredImportSelector.Group createGroup(Class<? extends MyDeferredImportSelector.Group> type) {
             Class<? extends MyDeferredImportSelector.Group> effectiveType = (type != null ? type : MyDefaultDeferredImportSelectorGroup.class);
-            return MyClassUtil.instantiateClass(effectiveType, MyDeferredImportSelector.Group.class, MyConfigurationClassParser.this.registry);
+            return MyClassUtil.instantiateClass(effectiveType, MyDeferredImportSelector.Group.class, (MyBeanFactory) MyConfigurationClassParser.this.registry);
         }
 
     }

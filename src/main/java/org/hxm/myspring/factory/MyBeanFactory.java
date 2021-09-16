@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class MyBeanFactory {
+public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
     private ClassLoader beanClassLoader= MyClassUtil.getDefaultClassLoader();
 
@@ -320,6 +320,7 @@ public class MyBeanFactory {
         return this.beanPostProcessors;
     }
 
+    @Override
     public void registerBeanDefinition(String beanName, MyBeanDefinition beanDefinition){
         this.beanDefinitionMap.put(beanName,beanDefinition);
         this.beanDefinitionNames.add(beanName);

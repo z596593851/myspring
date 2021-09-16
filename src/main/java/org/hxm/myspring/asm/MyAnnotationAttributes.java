@@ -1,8 +1,7 @@
 package org.hxm.myspring.asm;
 
-import org.springframework.lang.Nullable;
-
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,7 +24,7 @@ public class MyAnnotationAttributes extends LinkedHashMap<String, Object> {
         this.displayName = UNKNOWN;
     }
 
-    public static MyAnnotationAttributes fromMap(@Nullable Map<String, Object> map) {
+    public static MyAnnotationAttributes fromMap(Map<String, Object> map) {
         if (map == null) {
             return null;
         }
@@ -33,5 +32,26 @@ public class MyAnnotationAttributes extends LinkedHashMap<String, Object> {
             return (MyAnnotationAttributes) map;
         }
         return new MyAnnotationAttributes(map);
+    }
+
+    public String[] getStringArray(String attributeName) {
+        return getRequiredAttribute(attributeName, String[].class);
+    }
+
+    private <T> T getRequiredAttribute(String attributeName, Class<T> expectedType) {
+        Object value = get(attributeName);
+        if (!expectedType.isInstance(value) && expectedType.isArray() &&
+                expectedType.getComponentType().isInstance(value)) {
+            Object array = Array.newInstance(expectedType.getComponentType(), 1);
+            Array.set(array, 0, value);
+            value = array;
+        }
+        if (!expectedType.isInstance(value) && expectedType.isArray() &&
+                expectedType.getComponentType().isInstance(value)) {
+            Object array = Array.newInstance(expectedType.getComponentType(), 1);
+            Array.set(array, 0, value);
+            value = array;
+        }
+        return (T) value;
     }
 }

@@ -34,6 +34,15 @@ public class MyConfigurationClass {
         this.importedBy.add(importedBy);
     }
 
+    public MyConfigurationClass(MySimpleMetadataReader metadataReader, String beanName) {
+        this.metadata = metadataReader.getAnnotationMetadata();
+        this.beanName = beanName;
+    }
+
+    public void mergeImportedBy(MyConfigurationClass otherConfigClass) {
+        this.importedBy.addAll(otherConfigClass.importedBy);
+    }
+
     public void addBeanMethod(MyBeanMethod method) {
         this.beanMethods.add(method);
     }

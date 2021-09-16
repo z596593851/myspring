@@ -10,13 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.web.context.WebApplicationContext;
 import sun.tools.native2ascii.Main;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.util.Collection;
 import java.util.List;
 
-public class MyApplicationContext {
+public class MyApplicationContext implements MyBeanDefinitionRegistry {
     Logger logger= LoggerFactory.getLogger(MyApplicationContext.class);
 
     private MyScanner scanner;
@@ -41,6 +40,7 @@ public class MyApplicationContext {
         refresh();
     }
 
+    @Override
     public void registerBeanDefinition(String beanName, MyBeanDefinition beanDefinition){
         this.beanFactory.registerBeanDefinition(beanName,beanDefinition);
     }
@@ -170,6 +170,7 @@ public class MyApplicationContext {
        return this.beanFactory.getBean(beanName);
     }
 
-
-
+    public MyBeanFactory getBeanFactory() {
+        return beanFactory;
+    }
 }

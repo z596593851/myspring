@@ -37,6 +37,13 @@ public interface MyMergedAnnotations extends Iterable<MyMergedAnnotation<Annotat
     boolean isPresent(String annotationType);
 
     /**
+     * 检查指定注解是否存在
+     * @param annotationType 待检测的注解的权限定类名
+     * @return true/false
+     */
+    boolean isDirectlyPresent(String annotationType);
+
+    /**
      * 获取与指定类型最匹配的注解（annotation or meta-annotation）
      * 如果没有则返回 {@link MyMergedAnnotation#missing()}
      * @param annotationType 指定注解的权限定类名

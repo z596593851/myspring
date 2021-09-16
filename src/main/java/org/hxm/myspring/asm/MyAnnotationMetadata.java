@@ -40,7 +40,7 @@ public interface MyAnnotationMetadata extends MyClassMetadata,MyAnnotatedTypeMet
      * @return true/false
      */
     default boolean hasAnnotation(String annotationName){
-        return !getAnnotatedMethods(annotationName).isEmpty();
+        return getAnnotations().isDirectlyPresent(annotationName);
     }
 
     /**

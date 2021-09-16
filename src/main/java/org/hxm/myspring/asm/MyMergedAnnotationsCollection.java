@@ -36,6 +36,11 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
     }
 
     @Override
+    public boolean isDirectlyPresent(String annotationType) {
+        return isPresent(annotationType,true);
+    }
+
+    @Override
     public boolean isPresent(String annotationType) {
         return isPresent(annotationType,false);
     }

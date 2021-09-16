@@ -235,6 +235,12 @@ public class MyClassUtil {
         return shortName;
     }
 
+    public static String getPackageName(String fqClassName) {
+        Assert.notNull(fqClassName, "Class name must not be null");
+        int lastDotIndex = fqClassName.lastIndexOf('.');
+        return (lastDotIndex != -1 ? fqClassName.substring(0, lastDotIndex) : "");
+    }
+
 
 
 }
