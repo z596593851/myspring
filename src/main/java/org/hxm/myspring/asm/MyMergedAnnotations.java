@@ -7,7 +7,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.util.stream.Stream;
 
 /**
- * merged annotations的集合
+ * 一个类，或者一个类成员，或者一个方法上的所有注解，包括子注解
  *  <p>For example, a {@code @PostMapping} annotation might be defined as follows:
  *
  *  <pre class="code">
@@ -37,6 +37,11 @@ public interface MyMergedAnnotations extends Iterable<MyMergedAnnotation<Annotat
     boolean isPresent(String annotationType);
 
     /**
+     * 检查一个注解是否存在
+     */
+    <A extends Annotation> boolean isPresent(Class<A> annotationType);
+
+    /**
      * 检查指定注解是否存在
      * @param annotationType 待检测的注解的权限定类名
      * @return true/false
@@ -51,15 +56,21 @@ public interface MyMergedAnnotations extends Iterable<MyMergedAnnotation<Annotat
      */
     <A extends Annotation> MyMergedAnnotation<A> get(String annotationType);
 
+    <A extends Annotation> MyMergedAnnotation<A> get(Class<A> annotationType);
+
     Stream<MyMergedAnnotation<Annotation>> stream();
 
     /**
-     * 从指定的 element 创建一个包含所有注解(annotation and meta-annotation)的 {@link MyMergedAnnotation}
+     * 工厂方法，从指定的 element 创建一个包含所有注解(annotation and meta-annotation)的 {@link MyMergedAnnotations}
      * @param element 指定element
      * @param annotationFilter 注解过滤器
      * @return {@link MyTypeMappedAnnotations}
      */
     static MyTypeMappedAnnotations from(AnnotatedElement element, MyAnnotationFilter annotationFilter){
         return MyTypeMappedAnnotations.from(element,annotationFilter);
+    }
+
+    static MyTypeMappedAnnotations from(AnnotatedElement element){
+        return MyTypeMappedAnnotations.from(element, MyAnnotationFilter.PLAIN);
     }
 }

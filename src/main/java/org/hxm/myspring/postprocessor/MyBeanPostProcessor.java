@@ -1,5 +1,5 @@
 package org.hxm.myspring.postprocessor;
 
 public interface MyBeanPostProcessor {
-    public void postProcessProperties(Object bean, String beanName) throws Throwable;
+    void postProcessProperties(Object bean, String beanName) throws Throwable;
 }

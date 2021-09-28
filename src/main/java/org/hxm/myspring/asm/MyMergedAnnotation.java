@@ -6,7 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 /**
- * {@link MyMergedAnnotations} 中的一个单独的注解
+ * 一个单独的注解，及其子注解
  * @param <A> 注解的类型
  */
 public interface MyMergedAnnotation<A extends Annotation>{

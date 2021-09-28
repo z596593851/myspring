@@ -2,8 +2,6 @@ package org.hxm.myspring.asm;
 
 import org.hxm.myspring.annotation.MyAnnotationFilter;
 import org.hxm.myspring.postprocessor.MyAnnotationsProcessor;
-import org.springframework.core.Ordered;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.util.HashMap;
@@ -26,8 +24,7 @@ public class MyAnnotationsScanner {
                 Annotation annotation = annotations[i];
                 if (isIgnorable(annotation.annotationType())) {
                     annotations[i] = null;
-                }
-                else {
+                } else {
                     allIgnored = false;
                 }
             }
@@ -43,12 +40,30 @@ public class MyAnnotationsScanner {
         return MyAnnotationFilter.PLAIN.matches(annotationType);
     }
 
+    /**
+     *
+     * @param context 期望寻找的注解
+     * @param source 元素主体
+     * @param processor 处理器
+     */
     static <C, R> R scan(C context, AnnotatedElement source, MyAnnotationsProcessor<C, R> processor) {
-        R result=process(context,(Class<?>)source,processor);
+        R result=process(context,source,processor);
         return processor.finish(result);
     }
 
-    private static <C, R> R process(C context, Class<?> source,MyAnnotationsProcessor<C, R> processor) {
+
+    static <C, R> R process(C context, AnnotatedElement source, MyAnnotationsProcessor<C, R> processor){
+        //TODO 应该带着策略
+        return processElement(context, source, processor);
+    }
+
+    private static <R, C> R processElement(C context, AnnotatedElement source, MyAnnotationsProcessor<C,R> processor) {
+        R result = processor.doWithAggregate(context, 0);
+        return (result != null ? result : processor.doWithAnnotations(
+                context, 0, source, getDeclaredAnnotations(source, false)));
+    }
+
+    private static <C, R> R processClass(C context, Class<?> source,MyAnnotationsProcessor<C, R> processor) {
         Annotation[] relevant = null;
         int remaining = Integer.MAX_VALUE;
         int aggregateIndex = 0;
@@ -59,6 +74,7 @@ public class MyAnnotationsScanner {
             if (result != null) {
                 return result;
             }
+            //拿到类上的所有注解
             Annotation[] declaredAnnotations = getDeclaredAnnotations(source, true);
             if (relevant == null && declaredAnnotations.length > 0) {
                 relevant = root.getAnnotations();

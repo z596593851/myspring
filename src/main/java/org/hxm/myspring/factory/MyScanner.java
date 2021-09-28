@@ -52,7 +52,6 @@ public class MyScanner {
         try {
             ClassLoader cl = MyClassUtil.getDefaultClassLoader();
             basePackage=basePackage.replace(".","/")+"/";
-            //拿到指定路径下所有的URL(包括嵌套的文件夹内的类也可以拿到)
             Enumeration<URL> resourceUrls = (cl != null ? cl.getResources(basePackage) : ClassLoader.getSystemResources(basePackage));
             Resource rootDirResource= new UrlResource(resourceUrls.nextElement());
             File rootDir=rootDirResource.getFile().getAbsoluteFile();

@@ -8,13 +8,10 @@ import java.util.Collections;
 import java.util.Set;
 
 public class MyInjectionMetadata {
-    public static final MyInjectionMetadata EMPTY = new MyInjectionMetadata(Object.class, Collections.emptyList());
-    private final Class<?> targetClass;
+    public static final MyInjectionMetadata EMPTY = new MyInjectionMetadata(Collections.emptyList());
     private final Collection<MyInjectedElement> injectedElements;
-    private volatile Set<MyInjectedElement> checkedElements;
 
-    public MyInjectionMetadata(Class<?> targetClass, Collection<MyInjectedElement> elements) {
-        this.targetClass = targetClass;
+    public MyInjectionMetadata(Collection<MyInjectedElement> elements) {
         this.injectedElements = elements;
     }
 
@@ -35,17 +32,14 @@ public class MyInjectionMetadata {
     }
 
     public void inject(Object bean, String beanName) throws Throwable{
-
-        Collection<MyInjectedElement> checkedElements = this.checkedElements;
-        Collection<MyInjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
-        if (!elementsToIterate.isEmpty()) {
-            for (MyInjectedElement element : elementsToIterate) {
+        if (!this.injectedElements.isEmpty()) {
+            for (MyInjectedElement element : this.injectedElements) {
                 element.inject(bean, beanName);
             }
         }
     }
 
-    public static MyInjectionMetadata forElements(Collection<MyInjectedElement> elements, Class<?> clazz) {
-        return (elements.isEmpty() ? MyInjectionMetadata.EMPTY : new MyInjectionMetadata(clazz, elements));
+    public static MyInjectionMetadata forElements(Collection<MyInjectedElement> elements) {
+        return (elements.isEmpty() ? MyInjectionMetadata.EMPTY : new MyInjectionMetadata(elements));
     }
 }

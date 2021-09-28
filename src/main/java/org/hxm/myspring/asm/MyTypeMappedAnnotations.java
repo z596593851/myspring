@@ -2,9 +2,6 @@ package org.hxm.myspring.asm;
 
 import org.hxm.myspring.annotation.MyAnnotationFilter;
 import org.hxm.myspring.postprocessor.MyAnnotationsProcessor;
-import org.springframework.core.annotation.*;
-import org.springframework.lang.Nullable;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Member;
@@ -42,7 +39,15 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
         if (this.annotationFilter.matches(annotationType)) {
             return false;
         }
-        return Boolean.TRUE.equals(scan(annotationType,new IsPresent(this.annotationFilter,false)));
+        return Boolean.TRUE.equals(scan(annotationType,IsPresent.get(this.annotationFilter,false)));
+    }
+
+    @Override
+    public <A extends Annotation> boolean isPresent(Class<A> annotationType) {
+        if (this.annotationFilter.matches(annotationType)) {
+            return false;
+        }
+        return Boolean.TRUE.equals(scan(annotationType, IsPresent.get( this.annotationFilter, false)));
     }
 
     @Override
@@ -63,12 +68,12 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
 
     @Override
     public Spliterator<MyMergedAnnotation<Annotation>> spliterator() {
-        if (this.annotationFilter == AnnotationFilter.ALL) {
+        if (this.annotationFilter == MyAnnotationFilter.ALL) {
             return Spliterators.emptySpliterator();
         }
         return spliterator(null);
     }
-    private <A extends Annotation> Spliterator<MyMergedAnnotation<A>> spliterator(@Nullable Object annotationType) {
+    private <A extends Annotation> Spliterator<MyMergedAnnotation<A>> spliterator(Object annotationType) {
         return new MyAggregatesSpliterator<>(annotationType, getAggregates());
     }
 
@@ -93,6 +98,15 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
         return (result !=null? result: MyMergedAnnotation.missing());
     }
 
+    @Override
+    public <A extends Annotation> MyMergedAnnotation<A> get(Class<A> annotationType) {
+        if (this.annotationFilter.matches(annotationType)) {
+            return MyMergedAnnotation.missing();
+        }
+        MyMergedAnnotation<A> result = scan(annotationType, new MyMergedAnnotationFinder<>(annotationType));
+        return (result != null ? result : MyMergedAnnotation.missing());
+    }
+
     /**
      * mergedAnnotations 经过processor的处理后，返回处理结果
      * @param criteria 期望参与对比的element的权限定类名
@@ -101,7 +115,7 @@ public class MyTypeMappedAnnotations implements MyMergedAnnotations {
      */
     private <C, R> R scan(C criteria, MyAnnotationsProcessor<C, R> processor) {
         if(this.element!=null){
-            return MyAnnotationsScanner.scan(criteria,this.element,processor);
+            return MyAnnotationsScanner.scan(criteria, this.element, processor);
         }
         return null;
     }

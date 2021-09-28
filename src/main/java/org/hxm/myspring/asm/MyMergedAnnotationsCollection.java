@@ -3,7 +3,6 @@ package org.hxm.myspring.asm;
 import org.hxm.myspring.annotation.MyAnnotationFilter;
 import org.hxm.myspring.annotation.MyMergedAnnotationSelector;
 import org.hxm.myspring.annotation.MyMergedAnnotationSelectors;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -45,6 +44,11 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
         return isPresent(annotationType,false);
     }
 
+    @Override
+    public <A extends Annotation> boolean isPresent(Class<A> annotationType) {
+        return isPresent(annotationType, false);
+    }
+
     private boolean isPresent(Object requiredType, boolean directOnly) {
         for (MyMergedAnnotation<?> annotation : this.annotations) {
             Class<? extends Annotation> type = annotation.getType();
@@ -79,6 +83,12 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
         return (result != null ? result : MyMergedAnnotation.missing());
     }
 
+    @Override
+    public <A extends Annotation> MyMergedAnnotation<A> get(Class<A> annotationType) {
+        MyMergedAnnotation<A> result = find(annotationType, null);
+        return (result != null ? result : MyMergedAnnotation.missing());
+    }
+
     private <A extends Annotation> MyMergedAnnotation<A> find(Object requiredType, MyMergedAnnotationSelector<A> selector) {
         if (selector == null) {
             selector = MyMergedAnnotationSelectors.nearest();
@@ -98,6 +108,7 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
                     if (selector.isBestCandidate(candidate)) {
                         return candidate;
                     }
+                    //当有多个候选注解时，根据selector的策略选择合适的哪一个
                     result = (result != null ? selector.select(result, candidate) : candidate);
                 }
             }
@@ -122,7 +133,7 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
         return spliterator(null);
     }
 
-    private <A extends Annotation> Spliterator<MyMergedAnnotation<A>> spliterator(@Nullable Object annotationType) {
+    private <A extends Annotation> Spliterator<MyMergedAnnotation<A>> spliterator(Object annotationType) {
         return new MyMergedAnnotationsCollection.MyAnnotationsSpliterator<>(annotationType);
     }
 
@@ -167,7 +178,6 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
             return false;
         }
 
-        @Nullable
         private MyAnnotationTypeMapping getNextSuitableMapping(int annotationIndex) {
             MyAnnotationTypeMapping mapping;
             do {
@@ -181,14 +191,11 @@ public class MyMergedAnnotationsCollection implements MyMergedAnnotations{
             return null;
         }
 
-        @Nullable
         private MyAnnotationTypeMapping getMapping(int annotationIndex, int mappingIndex) {
             MyAnnotationTypeMappings mappings = MyMergedAnnotationsCollection.this.mappings[annotationIndex];
             return (mappingIndex < mappings.size() ? mappings.get(mappingIndex) : null);
         }
 
-        @Nullable
-        @SuppressWarnings("unchecked")
         private MyMergedAnnotation<A> createMergedAnnotationIfPossible(int annotationIndex, int mappingIndex) {
             MyMergedAnnotation<?> root = annotations[annotationIndex];
             if (mappingIndex == 0) {

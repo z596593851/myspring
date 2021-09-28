@@ -88,16 +88,14 @@ public class MyClassUtil {
         }
     }
 
-    public static void registerEnvironmentBeans(MyBeanFactory bf, ServletContext servletContext, ServletConfig servletConfig) {
+    /**
+     * 注册web环境所需要的 ("contextParameters", "contextAttributes")
+     */
+    public static void registerEnvironmentBeans(MyBeanFactory bf, ServletContext servletContext) {
 
         if (servletContext != null && !bf.containsBean(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME)) {
             bf.registerSingleton(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME, servletContext);
         }
-
-        if (servletConfig != null && !bf.containsBean(ConfigurableWebApplicationContext.SERVLET_CONFIG_BEAN_NAME)) {
-            bf.registerSingleton(ConfigurableWebApplicationContext.SERVLET_CONFIG_BEAN_NAME, servletConfig);
-        }
-
         if (!bf.containsBean(WebApplicationContext.CONTEXT_PARAMETERS_BEAN_NAME)) {
             Map<String, String> parameterMap = new HashMap<>();
             if (servletContext != null) {
@@ -105,13 +103,6 @@ public class MyClassUtil {
                 while (paramNameEnum.hasMoreElements()) {
                     String paramName = (String) paramNameEnum.nextElement();
                     parameterMap.put(paramName, servletContext.getInitParameter(paramName));
-                }
-            }
-            if (servletConfig != null) {
-                Enumeration<?> paramNameEnum = servletConfig.getInitParameterNames();
-                while (paramNameEnum.hasMoreElements()) {
-                    String paramName = (String) paramNameEnum.nextElement();
-                    parameterMap.put(paramName, servletConfig.getInitParameter(paramName));
                 }
             }
             bf.registerSingleton(WebApplicationContext.CONTEXT_PARAMETERS_BEAN_NAME,

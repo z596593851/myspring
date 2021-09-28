@@ -10,9 +10,6 @@ import org.hxm.myspring.stereotype.MyComponent;
 
 import java.util.*;
 
-/**
- * 解析@MyConfiguration
- */
 public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProcessor {
 
     public static final String CONFIGURATION_CLASS_FULL = "full";
@@ -53,20 +50,34 @@ public class MyConfigurationClassPostProcessor implements MyBeanFactoryPostProce
         Set<MyConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
         do{
             parser.parse(candidates);
-            //todo 解析出了重复的 记得查找原因
             Set<MyConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
             configClasses.removeAll(alreadyParsed);
             if(this.reader==null){
                 this.reader=new MyConfigurationClassBeanDefinitionReader(registry);
             }
-            //解析被@MyBean标注的方法
+            //将解析到的所有configClasses注册到BeanDefinition
             this.reader.loadBeanDefinitions(configClasses);
             alreadyParsed.addAll(configClasses);
-            configCandidates.clear();
-
-        }while(!configCandidates.isEmpty());
-
-
+            candidates.clear();
+            if (registry.getBeanDefinitionCount() > candidateNames.size()) {
+                List<String> newCandidateNames = registry.getBeanDefinitionNames();
+                Set<String> oldCandidateNames = new HashSet<>(candidateNames);
+                Set<String> alreadyParsedClasses = new HashSet<>();
+                for (MyConfigurationClass configurationClass : alreadyParsed) {
+                    alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+                }
+                for (String candidateName : newCandidateNames) {
+                    if (!oldCandidateNames.contains(candidateName)) {
+                        MyBeanDefinition bd = registry.getBeanDefinition(candidateName);
+                        if (checkConfigurationClassCandidate(bd) &&
+                                !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                            candidates.add(new MyBeanDefinitionHolder(bd, candidateName));
+                        }
+                    }
+                }
+                candidateNames = newCandidateNames;
+            }
+        }while(!candidates.isEmpty());
     }
 
     public boolean checkConfigurationClassCandidate(MyBeanDefinition beanDef){

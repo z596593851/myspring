@@ -26,6 +26,7 @@ public class MySpringApplication {
     private void prepareContext(MyApplicationContext context) {
         MyBeanDefinition mbd=new MyBeanDefinition(primarySources);
         String beanName= MyBeanNameGenerator.generateBeanName(mbd);
+        //将application类注册到beanDefinition
         context.registerBeanDefinition(beanName,mbd);
     }
 }

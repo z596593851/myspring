@@ -2,15 +2,18 @@ package org.hxm.myspring.factory;
 
 
 import org.hxm.myspring.annotation.MyValue;
+import org.hxm.myspring.asm.MyAnnotationAttributes;
 import org.hxm.myspring.function.MyObjectFactory;
-import org.hxm.myspring.postprocessor.MyAutowiredProcessor;
+import org.hxm.myspring.postprocessor.MyBeanFactoryAware;
 import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
 import org.hxm.myspring.postprocessor.MyBeanPostProcessor;
 import org.hxm.myspring.postprocessor.MyConfigurationClassPostProcessor;
+import org.hxm.myspring.utils.MyAnnotatedElementUtils;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.core.ResolvableType;
-import org.springframework.util.*;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -21,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class MyBeanFactory implements MyBeanDefinitionRegistry {
+
+    private static final Object[] EMPTY_ARGS = new Object[0];
 
     private ClassLoader beanClassLoader= MyClassUtil.getDefaultClassLoader();
 
@@ -33,17 +38,19 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
     //手动调用registerSingleton注册的bean的name
     private volatile Set<String> manualSingletonNames = new LinkedHashSet<>(16);
 
-    private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
+    private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
 
-    private List<MyBeanPostProcessor> beanPostProcessors=new ArrayList<>();
+    private final List<MyBeanPostProcessor> beanPostProcessors=new ArrayList<>();
 
-    private List<MyBeanFactoryPostProcessor> beanFactoryPostProcessors=new ArrayList<>();
+    private final List<MyBeanFactoryPostProcessor> beanFactoryPostProcessors=new ArrayList<>();
 
-    private ConcurrentMap<Class<?>, Method[]> factoryMethodCandidateCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Method[]> factoryMethodCandidateCache = new ConcurrentHashMap<>();
 
-    private Map<Class<?>, String[]> allBeanNamesByType = new ConcurrentHashMap<>();
+    private final Map<Class<?>, String[]> allBeanNamesByType = new ConcurrentHashMap<>();
 
     private boolean allowCircularReferences = true;
+
+    private static final String CGLIB_RENAMED_METHOD_PREFIX = "CGLIB$";
 
     //正在被创建的bean
     private final Set<String> singletonsCurrentlyInCreation =
@@ -57,6 +64,10 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
     /** Set of registered singletons, containing the bean names in registration order. */
     private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
+
+    private static final Method[] EMPTY_METHOD_ARRAY = new Method[0];
+
+    private Class<? extends Annotation> valueAnnotationType = MyValue.class;
 
     static {
         Map<Class<?>, Object> values = new HashMap<>();
@@ -96,16 +107,20 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
 
     public MyBeanFactory(){
-        beanPostProcessors.add(new MyAutowiredProcessor(this));
+//        beanPostProcessors.add(new MyAutowiredProcessor(this));
         beanFactoryPostProcessors.add(new MyConfigurationClassPostProcessor());
     }
 
-    public Object getBean(String beanName) throws Exception{
+    public void addBeanPostProcessor(MyBeanPostProcessor beanPostProcessor){
+        beanPostProcessors.add(beanPostProcessor);
+    }
+
+    public Object getBean(String beanName) {
         Object sharedInstance = getSingleton(beanName);
         if(sharedInstance==null){
             MyBeanDefinition mbd = getBeanDefinition(beanName);
             if(mbd==null){
-                throw new Exception(String.format("没有名为%s的beanDefinition",beanName));
+                throw new RuntimeException(String.format("没有名为%s的beanDefinition",beanName));
             }
             sharedInstance=getSingleton(beanName,()->{
                 try {
@@ -120,20 +135,22 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
 
     public Object createBean(String beanName,MyBeanDefinition mbd) throws Exception{
-        Object bean = null;
-        //普通bean的实例化
-        bean=createBeanInstance(beanName,mbd);
-        Class<?> beanType=bean.getClass();
-        mbd.resolvedTargetType = beanType;
+        //反射实现bean的实例化
+        Object bean=createBeanInstance(beanName,mbd);
+        mbd.resolvedTargetType = bean.getClass();
         //循环依赖 2-将当前正在创建的Bean保存到三级缓存中，并从二级缓存中移除（由于本来二级缓存中没有，故可以只认定为放入三级缓存）
         boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
                 isSingletonCurrentlyInCreation(beanName));
         if (earlySingletonExposure) {
             addSingletonFactory(beanName,bean);
         }
+        Object exposedObject = bean;
         try {
             //属性注入
             populateBean(beanName,mbd,bean);
+            //初始化
+            exposedObject = initializeBean(beanName, exposedObject, mbd);
+
         }catch (Throwable ex){
             ex.printStackTrace();
         }
@@ -141,14 +158,25 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         return bean;
     }
 
-    public Object getSingleton(String beanName, MyObjectFactory<?> objectFactory){
+    private Object initializeBean(String beanName, Object bean, MyBeanDefinition mbd) {
+        invokeAwareMethods(beanName, bean);
+        return bean;
+    }
+
+    private void invokeAwareMethods(String beanName, Object bean) {
+        if (bean instanceof MyBeanFactoryAware) {
+            ((MyBeanFactoryAware) bean).setBeanFactory(this);
+        }
+    }
+
+    public Object getSingleton(String beanName, MyObjectFactory<?> singletonFactory){
         Object singletonObject = this.singletonObjects.get(beanName);
         if(singletonObject==null){
             //循环依赖 1-放入正在创建的bean的集合
             beforeSingletonCreation(beanName);
             boolean newSingleton = false;
             try {
-                singletonObject=objectFactory.getObject();
+                singletonObject=singletonFactory.getObject();
                 newSingleton = true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -191,7 +219,8 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
     public Object createBeanInstance(String beanName, MyBeanDefinition mbd,Object... args) throws Exception {
         if (mbd.getFactoryMethodName() != null) {
-            return instantiateUsingFactoryMethod(beanName,mbd,args);
+            //创建@Bean标注的方法生产的类实例
+            return instantiateUsingFactoryMethod(mbd);
         }
         Constructor<?> constructorToUse= (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
         if (constructorToUse == null) {
@@ -213,7 +242,7 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         return constructorToUse.newInstance(argsWithDefaultValues);
     }
 
-    public Object instantiateUsingFactoryMethod(String beanName, MyBeanDefinition mbd, Object[] explicitArgs){
+    public Object instantiateUsingFactoryMethod(MyBeanDefinition mbd){
         Object factoryBean=null;
         Object result=null;
         String factoryBeanName = mbd.getFactoryBeanName();
@@ -236,9 +265,9 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
                     mbd.factoryMethodToIntrospect = uniqueCandidate;
                     mbd.resolvedConstructorOrFactoryMethod = uniqueCandidate;
                     mbd.constructorArgumentsResolved = true;
-                    mbd.resolvedConstructorArguments = new Object[0];
+                    mbd.resolvedConstructorArguments = EMPTY_ARGS;
                     MyClassUtil.makeAccessible(uniqueCandidate);
-                    result=uniqueCandidate.invoke(factoryBean,new Object[0]);
+                    result=uniqueCandidate.invoke(factoryBean,EMPTY_ARGS);
                 }
             }
         } catch (Exception e) {
@@ -249,58 +278,56 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
 
     public Object resolveDependency(String beanName, Field field, Set<String> autowiredBeanNames) throws Throwable {
         Annotation[] fieldAnnotations=field.getAnnotations();
-        Annotation ann=fieldAnnotations[0];
-        //解析@MyValue
-        if(ann.annotationType()== MyValue.class) {
-            Method[] methods = ann.annotationType().getDeclaredMethods();
-            Method me = methods[0];
-            //@MyValue中设置的值
-            Object value = me.invoke(ann, null);
-            if (value != null) {
-                return value;
-            }
+        //如果注解是 @MyValue 则获取@MyValue的值
+        MyAnnotationAttributes attr = MyAnnotatedElementUtils.getMergedAnnotationAttributes(MyAnnotatedElementUtils.forAnnotations(fieldAnnotations), this.valueAnnotationType);
+        if(attr!=null){
+            return attr.get("value");
         }
+        Class<?> type = field.getType();
         //解析@MyAutowired
-        return doResolveDependency(beanName,field,autowiredBeanNames);
+        Map<String, Object> matchingBeans=findAutowireCandidates(beanName,type);
+        if(matchingBeans.isEmpty()){
+            return null;
+        }
+        //beanName
+        String autowiredBeanName=null;
+        //beanClass
+        Object instanceCandidate=null;
+        if(matchingBeans.size()>1){
+            //同一类型的bean有多种时，在spring源码中会优先取primary标记的那个
+            for (Map.Entry<String, Object> entry : matchingBeans.entrySet()) {
+                String candidateName = entry.getKey();
+                Object beanInstance = entry.getValue();
+                if (beanInstance != null && matchesBeanName(candidateName,field.getName())){
+                    return candidateName;
+                }
+            }
+        }else {
+            Map.Entry<String, Object> entry = matchingBeans.entrySet().iterator().next();
+            autowiredBeanName = entry.getKey();
+            instanceCandidate = entry.getValue();
+        }
+        if (autowiredBeanNames != null) {
+            autowiredBeanNames.add(autowiredBeanName);
+        }
+        if(instanceCandidate instanceof Class){
+            instanceCandidate=getBean(autowiredBeanName);
+        }
+        return instanceCandidate;
     }
 
-    public Object doResolveDependency(String beanName, Field field,Set<String> autowiredBeanNames){
-        Map<String, Object> candidates = null;
-        try {
-            Class<?> type = field.getType();
-            //拿到type对应的beanDefination的beanName
-            String[] candidateNames=getBeanNamesForType(type,true);
-            candidates = new LinkedHashMap<>(candidateNames.length);
-            for (String candidateName : candidateNames) {
-                // <beanName,class>
-                candidates.put(candidateName,getType(candidateName));
-            }
-            if(candidates.isEmpty()){
-                throw new Exception("注解"+ObjectUtils.nullSafeToString(field.getAnnotations())+"没有对应的bean");
-            }
-            //beanName
-            String autowiredBeanName=null;
-            //beanClass
-            Object instanceCandidate=null;
-            if(candidates.size()>1){
+    protected boolean matchesBeanName(String beanName, String candidateName) {
+        return candidateName != null && (candidateName.equals(beanName));
+    }
 
-            }else {
-                Map.Entry<String, Object> entry = candidates.entrySet().iterator().next();
-                autowiredBeanName = entry.getKey();
-                instanceCandidate = entry.getValue();
-            }
-            if (autowiredBeanNames != null) {
-                autowiredBeanNames.add(autowiredBeanName);
-            }
-            if(instanceCandidate instanceof Class){
-                instanceCandidate=getBean(autowiredBeanName);
-            }
-            return instanceCandidate;
-        } catch (Exception e) {
-            e.printStackTrace();
+    private Map<String, Object> findAutowireCandidates(String beanName, Class<?> requiredType){
+        String[] candidateNames=getBeanNamesForType(requiredType,true);
+        Map<String, Object> result = new LinkedHashMap<>(candidateNames.length);
+        for (String candidateName : candidateNames) {
+            // <beanName,class>
+            result.put(candidateName,getType(candidateName));
         }
-
-        return candidates;
+        return result;
     }
 
     /**
@@ -330,7 +357,7 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         return this.beanDefinitionMap.get(beanName);
     }
 
-    public void preInstantiateSingletons() throws Exception{
+    public void preInstantiateSingletons(){
         List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
         for (String beanName : beanNames) {
             MyBeanDefinition mbd=this.beanDefinitionMap.get(beanName);
@@ -344,8 +371,8 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         return this.beanClassLoader;
     }
 
-    public String[] getBeanNamesForType(Class<?> type,boolean allowEagerInit){
-        if(!allowEagerInit){
+    public String[] getBeanNamesForType(Class<?> type, boolean allowEagerInit){
+        if(type==null || !allowEagerInit){
             return doGetBeanNamesForType(type,allowEagerInit);
         }
         String[] resolvedBeanNames = this.allBeanNamesByType.get(type);
@@ -359,16 +386,14 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
     }
 
     /**
-     * 遍历所有beanDefinition，找到和type对应的bean的beanName,在注入@MyAutowired时用。
-     * @param type 待匹配的class
-     * @param allowEagerInit
-     * @return
+     * 遍历所有beanDefinition，找到和type对应的bean的beanName
      */
     public String[] doGetBeanNamesForType(Class<?> type, boolean allowEagerInit) {
         List<String> result = new ArrayList<>();
         try {
             for(String beanName:this.beanDefinitionNames){
                 MyBeanDefinition beanDefinition=getBeanDefinition(beanName);
+                //检查是否FactoryBean，但主要目的是设置 @Bean 返回类的BeanDefinition的resolvedTargetType
                 boolean isFactoryBean=isFactoryBean(beanName, beanDefinition);
                 boolean matchFound = false;
                 if(!isFactoryBean){
@@ -378,6 +403,7 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
                     result.add(beanName);
                 }
             }
+            //手动调用registerSingleton注册的bean
             for(String beanName:this.manualSingletonNames){
                 if (isTypeMatch(beanName, type)) {
                     result.add(beanName);
@@ -387,9 +413,9 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
             e.printStackTrace();
         }
         return StringUtils.toStringArray(result);
-//        return result.isEmpty()?new String[]{}: (String[]) result.toArray();
     }
-    protected boolean isTypeMatch(String name,Class<?> type){
+
+    protected boolean isTypeMatch(String name, Class<?> type){
         Object beanInstance = getSingleton(name);
         if(beanInstance!=null){
             return type.isAssignableFrom(beanInstance.getClass());
@@ -427,9 +453,7 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
      * 设置并查询BeanDefinition的resolvedTargetType
      */
     protected Class<?> predictBeanType(String beanName, MyBeanDefinition mbd,Class<?>... typesToMatch){
-        Class<?> targetType = determineTargetType(beanName, mbd, typesToMatch);
-        return targetType;
-
+        return determineTargetType(beanName, mbd, typesToMatch);
     }
 
     protected Class<?> determineTargetType(String beanName, MyBeanDefinition mbd, Class<?>... typesToMatch) {
@@ -464,28 +488,29 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         if (cachedReturnType != null) {
             return cachedReturnType.resolve();
         }
-
         Class<?> commonType = null;
         Method uniqueCandidate = mbd.factoryMethodToIntrospect;
         if(uniqueCandidate==null){
             String factoryBeanName = mbd.getFactoryBeanName();
             Class<?> factoryClass=getType(factoryBeanName);
-            //如果key不存在，就将key作为参数传入后面的函数中，函数的返回值作为value存入map
+            //如果key存在则返回值，如果不存在就将key作为参数传入后面的函数中，函数的返回值作为value存入map
             Method[] candidates = this.factoryMethodCandidateCache.computeIfAbsent(factoryClass,
                     clazz ->{
+                        final List<Method> methods = new ArrayList<>(32);
                         Method[] declaredMethods = clazz.getDeclaredMethods();
                         for(Method method:declaredMethods){
                             if(method.isBridge()||method.isSynthetic()){
                                 continue;
                             }
+                            methods.add(method);
                         }
-                        return declaredMethods;
+                        return methods.toArray(EMPTY_METHOD_ARRAY);
                     });
             //拿到factory类的所有方法，遍历找到当前@Bean标注的beanDefinition中存的factoryMethodName对应的那个方法
             for(Method candidate : candidates){
                 if(mbd.isFactoryMethod(candidate)){
                     if (candidate.getTypeParameters().length > 0) {
-
+                        //如果@Bean标注的标注的方法有参数，暂不处理
                     }else {
                         //方法
                         uniqueCandidate= (commonType == null ? candidate : null);
@@ -508,8 +533,24 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         return cachedReturnType.resolve();
     }
 
+    public static boolean isCglibRenamedMethod(Method renamedMethod) {
+        String name = renamedMethod.getName();
+        if (name.startsWith(CGLIB_RENAMED_METHOD_PREFIX)) {
+            int i = name.length() - 1;
+            while (i >= 0 && Character.isDigit(name.charAt(i))) {
+                i--;
+            }
+            return (i > CGLIB_RENAMED_METHOD_PREFIX.length() && (i < name.length() - 1) && name.charAt(i) == '$');
+        }
+        return false;
+    }
+
     public List<String> getBeanDefinitionNames(){
         return this.beanDefinitionNames;
+    }
+
+    public int getBeanDefinitionCount() {
+        return this.beanDefinitionMap.size();
     }
 
     public List<MyBeanFactoryPostProcessor>getBeanFactoryPostProcessor(){
@@ -523,8 +564,7 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         }
         //如果为空，说明不是单例，或者还未实例化，则从beanDefination中获取
         MyBeanDefinition mbd=getBeanDefinition(name);
-        Class<?> beanClass = predictBeanType(name, mbd);
-        return beanClass;
+        return predictBeanType(name, mbd);
     }
 
     /**
@@ -540,7 +580,6 @@ public class MyBeanFactory implements MyBeanDefinitionRegistry {
         this.singletonsCurrentlyInCreation.add(beanName);
     }
     protected void addSingletonFactory(String beanName, Object singletonBean) {
-        Assert.notNull(singletonBean, "Singleton factory must not be null");
         synchronized (this.singletonObjects) {
             if (!this.singletonObjects.containsKey(beanName)) {
                 //三级缓存

@@ -17,7 +17,7 @@ public class MyTomcatWebServer {
     private static final AtomicInteger containerCounter = new AtomicInteger(-1);
     private final Map<Service, Connector[]> serviceConnectors = new HashMap<>();
 
-    public MyTomcatWebServer(Tomcat tomcat,boolean autoStart){
+    public MyTomcatWebServer(Tomcat tomcat, boolean autoStart){
         this.tomcat = tomcat;
         this.autoStart = autoStart;
         initialize();
@@ -34,6 +34,7 @@ public class MyTomcatWebServer {
                     removeServiceConnectors();
                 }
             });
+            //tomcat启动时会调ServletContainerInitializer的initializers的onStartup方法
             this.tomcat.start();
             try {
                 ContextBindings.bindClassLoader(context, context.getNamingToken(), getClass().getClassLoader());

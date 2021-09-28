@@ -3,6 +3,7 @@ package org.hxm.myspring.postprocessor;
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.asm.MySimpleMetadataReader;
 import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -13,7 +14,7 @@ public class MyConfigurationClass {
 
     private String beanName;
 
-    private MyAnnotationMetadata metadata;
+    private final MyAnnotationMetadata metadata;
 
     private List<MyBeanMethod> beanMethods=new ArrayList<>();
 
@@ -69,6 +70,17 @@ public class MyConfigurationClass {
 
     public void setBeanName(String beanName) {
         this.beanName = beanName;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object other) {
+        return (this == other || (other instanceof MyConfigurationClass &&
+                getMetadata().getClassName().equals(((MyConfigurationClass) other).getMetadata().getClassName())));
+    }
+
+    @Override
+    public int hashCode() {
+        return getMetadata().getClassName().hashCode();
     }
 
 

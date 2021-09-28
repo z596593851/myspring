@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * 注解的元信息（MergedAnnotation）
+ * 单独的注解，及其元信息
  */
 public class MyAnnotationTypeMapping {
     private final MyAnnotationTypeMapping source;

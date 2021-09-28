@@ -3,7 +3,7 @@ package org.hxm.myspring.annotation;
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 
 public interface MyDeferredImportSelector extends MyImportSelector{
-    default Class<? extends MyDeferredImportSelector.Group> getImportGroup() {
+    default Class<? extends Group> getImportGroup() {
         return null;
     }
     interface Group {

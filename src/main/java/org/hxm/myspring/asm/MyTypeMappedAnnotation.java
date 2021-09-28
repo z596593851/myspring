@@ -8,10 +8,6 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * 一般形式的注解
- * @param <A> 注解的类型
- */
 public class MyTypeMappedAnnotation<A extends Annotation> extends MyAbstractMergedAnnotation<A> {
 
     private MyAnnotationTypeMapping mapping;

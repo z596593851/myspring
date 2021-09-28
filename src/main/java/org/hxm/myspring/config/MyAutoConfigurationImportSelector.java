@@ -6,11 +6,14 @@ import org.hxm.myspring.asm.MyAnnotationAttributes;
 import org.hxm.myspring.asm.MyAnnotationMetadata;
 import org.hxm.myspring.spi.SpringSPILoader;
 import org.hxm.myspring.utils.MyClassUtil;
+import org.springframework.boot.autoconfigure.AutoConfigurationImportSelector;
+import org.springframework.context.annotation.DeferredImportSelector;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MyAutoConfigurationImportSelector implements MyDeferredImportSelector {
 
@@ -68,8 +71,25 @@ public class MyAutoConfigurationImportSelector implements MyDeferredImportSelect
 
         @Override
         public Iterable<Entry> selectImports() {
-            return null;
+            if (this.autoConfigurationEntries.isEmpty()) {
+                return Collections.emptyList();
+            }
+            Set<String> allExclusions = this.autoConfigurationEntries.stream()
+                    .map(MyAutoConfigurationEntry::getExclusions).flatMap(Collection::stream).collect(Collectors.toSet());
+            Set<String> processedConfigurations = this.autoConfigurationEntries.stream()
+                    .map(MyAutoConfigurationEntry::getConfigurations).flatMap(Collection::stream)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            processedConfigurations.removeAll(allExclusions);
+
+            return processedConfigurations.stream()
+                    .map((importClassName) -> new MyDeferredImportSelector.Group.Entry(this.entries.get(importClassName), importClassName))
+                    .collect(Collectors.toList());
         }
+    }
+
+    @Override
+    public Class<? extends Group> getImportGroup() {
+        return MyAutoConfigurationGroup.class;
     }
 
     protected static class MyAutoConfigurationEntry {

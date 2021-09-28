@@ -6,6 +6,7 @@ import org.hxm.myspring.factory.*;
 import org.hxm.myspring.utils.MyAnnotationConfigUtils;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -36,11 +37,11 @@ public class MyConfigurationClassParser {
 
     public void parse(Set<MyBeanDefinitionHolder> configCandidates){
         for(MyBeanDefinitionHolder beanDefinitionHolder:configCandidates){
-            //将标注了@MyConfiguration的类封装成MyConfigurationClass
+            //处理 @Component 和 @Configuration
             processConfigurationClass(new MyConfigurationClass(beanDefinitionHolder.getBeanDefinition().getMetadata(),beanDefinitionHolder.getBeanName()),
                     DEFAULT_EXCLUSION_FILTER);
         }
-        //todo 处理通过spi引入的config类
+        //处理 deferredImportSelectorHandler 中的 ImportSelector ,其通过spi引入autoConfig类
         this.deferredImportSelectorHandler.process();
     }
 
@@ -66,16 +67,13 @@ public class MyConfigurationClassParser {
             }
             while (sourceClass != null);
             this.configurationClasses.put(configClass,configClass);
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private MySourceClass doProcessConfigurationClass(MyConfigurationClass configClass, MySourceClass sourceClass,  Predicate<String> filter) throws IOException {
-        MyAnnotationMetadata origional=configClass.getMetadata();
-        //todo 处理ComponentScan
+        //是否标记了@ComponentScan
         MyAnnotationAttributes componentScan = MyAnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), MyComponentScan.class);
         if(componentScan!=null){
             Set<String> basePackages = new LinkedHashSet<>();
@@ -87,23 +85,26 @@ public class MyConfigurationClassParser {
                 basePackages.add(MyClassUtil.getPackageName(sourceClass.getMetadata().getClassName()));
             }
             MyScanner scanner=new MyScanner(this.registry);
-            //todo 将当前类设置为filter 防止循环扫描
+            //将当前类设置为filter 防止循环扫描
             scanner.addExcludeFilter(new MyAbstractTypeFilter() {
                 @Override
                 protected boolean matchClassName(String className) {
                     return sourceClass.getMetadata().getClassName().equals(className);
                 }
             });
+            //扫描application所在根目录下的 @Compoment 和 @Configuration
             Set<MyBeanDefinitionHolder> scannedBeanDefinitions = scanner.scan(StringUtils.toStringArray(basePackages));
             for(MyBeanDefinitionHolder holder:scannedBeanDefinitions){
+                //递归调用
                 processConfigurationClass(new MyConfigurationClass(new MySimpleMetadataReader(new ClassPathResource(MyClassUtil.convertClassNameToResourcePath(holder.getBeanDefinition().getBeanClassName())+".class",
                         MyClassUtil.getDefaultClassLoader())),holder.getBeanName()),DEFAULT_EXCLUSION_FILTER);
             }
 
         }
+        //处理 @Import 导入的类，可以是 ImportSelector 也可以是普通类
         processImports(configClass, sourceClass,getImports(sourceClass),DEFAULT_EXCLUSION_FILTER,true);
-        Set<MyMethodMetadata> beanMethods = origional.getAnnotatedMethods(MyBean.class.getName());
-        //提取MyConfigurationClass中所有标注了@MyBean的方法
+        //处理 @Configuration 中的 @Bean
+        Set<MyMethodMetadata> beanMethods=sourceClass.getMetadata().getAnnotatedMethods(MyBean.class.getName());
         for(MyMethodMetadata methodMetadata:beanMethods){
             configClass.addBeanMethod(new MyBeanMethod(methodMetadata,configClass));
         }
@@ -112,12 +113,15 @@ public class MyConfigurationClassParser {
 
     private void processImports(MyConfigurationClass configClass, MySourceClass currentSourceClass,
                                 Collection<MySourceClass> importCandidates, Predicate<String> exclusionFilter, boolean checkForCircularImports){
+        //没有标记@Importx
         if (importCandidates.isEmpty()) {
             return;
         }
         this.importStack.push(configClass);
         try {
             for (MySourceClass candidate : importCandidates) {
+                //如果 @Import 导入的是一个 MyImportSelector，那么实例化它，然后加入到
+                // deferredImportSelectorHandler 中等待后续的处理
                 if(candidate.isAssignable(MyImportSelector.class)){
                     Class<?> candidateClass = candidate.loadClass();
                     MyImportSelector selector=MyClassUtil.instantiateClass(candidateClass,MyImportSelector.class, (MyBeanFactory) registry);
@@ -125,9 +129,7 @@ public class MyConfigurationClassParser {
                         this.deferredImportSelectorHandler.handle(configClass,(MyDeferredImportSelector)selector);
                     }
                 }else{
-                    // Candidate class not an ImportSelector or ImportBeanDefinitionRegistrar ->
-                    // process it as an @Configuration class
-                    //todo 将import导入的类注入容器
+                    //否则直接将 @Import 导入的类交给 processConfigurationClass 解析
                     this.importStack.registerImport(currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
                     processConfigurationClass(candidate.asConfigClass(configClass), exclusionFilter);
 
@@ -255,6 +257,22 @@ public class MyConfigurationClassParser {
         public Class<?> loadClass(){
             return (Class<?>) this.source;
         }
+
+        @Override
+        public boolean equals(@Nullable Object other) {
+            return (this == other || (other instanceof MySourceClass &&
+                    this.metadata.getClassName().equals(((MySourceClass) other).metadata.getClassName())));
+        }
+
+        @Override
+        public int hashCode() {
+            return this.metadata.getClassName().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return this.metadata.getClassName();
+        }
     }
 
     public MySourceClass asSourceClass(Class<?> classType, Predicate<String> filter){
@@ -311,6 +329,7 @@ public class MyConfigurationClassParser {
     }
 
     private class MyDeferredImportSelectorHandler {
+
         private List<MyDeferredImportSelectorHolder> deferredImportSelectors = new ArrayList<>();
 
         public void handle(MyConfigurationClass configClass, MyDeferredImportSelector importSelector) {
@@ -374,28 +393,28 @@ public class MyConfigurationClassParser {
         }
 
         private MyDeferredImportSelector.Group createGroup(Class<? extends MyDeferredImportSelector.Group> type) {
-            Class<? extends MyDeferredImportSelector.Group> effectiveType = (type != null ? type : MyDefaultDeferredImportSelectorGroup.class);
-            return MyClassUtil.instantiateClass(effectiveType, MyDeferredImportSelector.Group.class, (MyBeanFactory) MyConfigurationClassParser.this.registry);
+//            Class<? extends MyDeferredImportSelector.Group> effectiveType = (type != null ? type : MyDefaultDeferredImportSelectorGroup.class);
+            return MyClassUtil.instantiateClass(type, MyDeferredImportSelector.Group.class, (MyBeanFactory) MyConfigurationClassParser.this.registry);
         }
 
     }
 
-    private static class MyDefaultDeferredImportSelectorGroup implements MyDeferredImportSelector.Group {
-
-        private final List<Entry> imports = new ArrayList<>();
-
-        @Override
-        public void process(MyAnnotationMetadata metadata, MyDeferredImportSelector selector) {
-            for (String importClassName : selector.selectImports(metadata)) {
-                this.imports.add(new Entry(metadata, importClassName));
-            }
-        }
-
-        @Override
-        public Iterable<Entry> selectImports() {
-            return this.imports;
-        }
-    }
+//    private static class MyDefaultDeferredImportSelectorGroup implements MyDeferredImportSelector.Group {
+//
+//        private final List<Entry> imports = new ArrayList<>();
+//
+//        @Override
+//        public void process(MyAnnotationMetadata metadata, MyDeferredImportSelector selector) {
+//            for (String importClassName : selector.selectImports(metadata)) {
+//                this.imports.add(new Entry(metadata, importClassName));
+//            }
+//        }
+//
+//        @Override
+//        public Iterable<Entry> selectImports() {
+//            return this.imports;
+//        }
+//    }
 
     private static class MyDeferredImportSelectorGrouping {
 

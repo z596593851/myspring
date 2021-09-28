@@ -4,8 +4,6 @@ import org.apache.catalina.Container;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Wrapper;
 import org.apache.catalina.core.StandardContext;
-import org.apache.catalina.core.StandardWrapper;
-import org.springframework.boot.web.server.WebServerException;
 import org.springframework.util.ClassUtils;
 
 import javax.servlet.ServletException;
@@ -17,9 +15,6 @@ import java.util.stream.Stream;
 
 public class MyTomcatEmbeddedContext extends StandardContext {
     private MyTomcatStarter starter;
-    public void setStarter(MyTomcatStarter starter) {
-        this.starter = starter;
-    }
 
     void deferredLoadOnStartup() throws LifecycleException {
         doWithThreadContextClassLoader(getLoader().getClassLoader(),
@@ -58,5 +53,13 @@ public class MyTomcatEmbeddedContext extends StandardContext {
                 ClassUtils.overrideThreadContextClassLoader(existingLoader);
             }
         }
+    }
+
+    public void setStarter(MyTomcatStarter starter) {
+        this.starter = starter;
+    }
+
+    public MyTomcatStarter getStarter() {
+        return starter;
     }
 }

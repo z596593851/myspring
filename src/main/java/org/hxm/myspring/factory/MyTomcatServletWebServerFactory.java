@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class MyTomcatServletWebServerFactory {
     private final StaticResourceJars staticResourceJars = new StaticResourceJars();
-    private Map<Locale, Charset> localeCharsetMappings = new HashMap<>();
+    private final Map<Locale, Charset> localeCharsetMappings = new HashMap<>();
     private boolean registerDefaultServlet = true;
     protected final Log logger = LogFactory.getLog(getClass());
     private String displayName="application";
@@ -41,17 +41,14 @@ public class MyTomcatServletWebServerFactory {
     public static final String DEFAULT_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol";
     private int port = 8080;
     private File baseDirectory;
-    private boolean disableMBeanRegistry = true;
     private String protocol = DEFAULT_PROTOCOL;
     private Charset uriEncoding = DEFAULT_CHARSET;
     private final MyDocumentRoot documentRoot = new MyDocumentRoot(this.logger);
-    private Jsp jsp = new Jsp();
-    private static final Set<Class<?>> NO_CLASSES = Collections.emptySet();private List<LifecycleListener> contextLifecycleListeners = getDefaultLifecycleListeners();
+    private static final Set<Class<?>> NO_CLASSES = Collections.emptySet();
+    private final List<LifecycleListener> contextLifecycleListeners = getDefaultLifecycleListeners();
 
     public MyTomcatWebServer getWebServer(MyServletContextInitializer... initializers){
-        if (this.disableMBeanRegistry) {
-            Registry.disableRegistry();
-        }
+        Registry.disableRegistry();
         Tomcat tomcat = new Tomcat();
         File baseDir = (this.baseDirectory != null) ? this.baseDirectory : createTempDir("tomcat");
         tomcat.setBaseDir(baseDir.getAbsolutePath());
@@ -87,23 +84,19 @@ public class MyTomcatServletWebServerFactory {
         catch (NoSuchMethodError ex) {
             // Tomcat is < 8.5.39. Continue.
         }
-//        configureTldPatterns(context);
         WebappLoader loader = new WebappLoader();
         loader.setLoaderClass(TomcatEmbeddedWebappClassLoader.class.getName());
         loader.setDelegate(true);
         context.setLoader(loader);
-        if (isRegisterDefaultServlet()) {
-            addDefaultServlet(context);
-        }
+        addDefaultServlet(context);
         context.addLifecycleListener(new StaticResourceConfigurer(context));
         host.addChild(context);
         configureContext(context, initializers);
-//        postProcessContext(context);
     }
 
     private static List<LifecycleListener> getDefaultLifecycleListeners() {
         AprLifecycleListener aprLifecycleListener = new AprLifecycleListener();
-        return AprLifecycleListener.isAprAvailable() ? new ArrayList<>(Arrays.asList(aprLifecycleListener))
+        return AprLifecycleListener.isAprAvailable() ? new ArrayList<>(Collections.singletonList(aprLifecycleListener))
                 : new ArrayList<>();
     }
 

@@ -1,10 +1,12 @@
 package org.hxm.myspring.postprocessor;
 
+import org.hxm.myspring.annotation.MyAutowired;
+import org.hxm.myspring.annotation.MyValue;
+import org.hxm.myspring.asm.MyMergedAnnotation;
+import org.hxm.myspring.asm.MyMergedAnnotations;
 import org.hxm.myspring.factory.MyBeanDefinition;
 import org.hxm.myspring.factory.MyBeanFactory;
 import org.hxm.myspring.factory.MyInjectionMetadata;
-import org.hxm.myspring.annotation.MyAutowired;
-import org.hxm.myspring.annotation.MyValue;
 import org.hxm.myspring.utils.MyClassUtil;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
@@ -14,7 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class MyAutowiredProcessor implements MyBeanPostProcessor{
+public class MyAutowiredProcessor implements MyBeanPostProcessor,MyBeanFactoryAware{
 
     private final Set<Class<? extends Annotation>> autowiredAnnotationTypes = new LinkedHashSet<>(4);
 
@@ -26,12 +28,7 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         this.autowiredAnnotationTypes.add(MyValue.class);
     }
 
-    public MyAutowiredProcessor(MyBeanFactory beanFactory){
-        this();
-        this.beanFactory=beanFactory;
-    }
-
-
+    @Override
     public void setBeanFactory(MyBeanFactory beanFactory){
         this.beanFactory=beanFactory;
     }
@@ -46,18 +43,18 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
     }
 
     /**
-     * 通过反射拿到一个类的所有成员的注解（仅限于@MyAutowired和@MyValue）
+     * 将所有标注了 @MyAutowired 和 @MyValue 的成员变量封装成一个 MyInjectionMetadata 返回
      */
-    public MyInjectionMetadata buildAutowiringMetadata(Class<?> clazz) throws Exception{
+    public MyInjectionMetadata buildAutowiringMetadata(Class<?> clazz){
         List<MyInjectionMetadata.MyInjectedElement> elements = new ArrayList<>();
         Field[] result=clazz.getDeclaredFields();
         for(Field field:result){
-            Annotation ann=findAutowiredAnnotation(field);
+            MyMergedAnnotation<?> ann=findAutowiredAnnotation(field);
             if(ann!=null){
                 elements.add(new MyAutowiredFieldElement(field, true));
             }
         }
-        return MyInjectionMetadata.forElements(elements, clazz);
+        return MyInjectionMetadata.forElements(elements);
     }
 
     private class MyAutowiredFieldElement extends MyInjectionMetadata.MyInjectedElement {
@@ -82,44 +79,14 @@ public class MyAutowiredProcessor implements MyBeanPostProcessor{
         }
     }
 
-    public Annotation findAutowiredAnnotation(AccessibleObject ao){
-        for(Class<?extends Annotation> type:this.autowiredAnnotationTypes){
-            //todo 利用注解体系获取注解，而不是直接获取。记得改写
-            Annotation[] declaredAnnotations = ao.getDeclaredAnnotations();
-            if(declaredAnnotations==null || declaredAnnotations.length==0){
-                return null;
-            }
-            Annotation ann=declaredAnnotations[0];
-            if(ann.annotationType()==type){
-                return ann;
+    public MyMergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao){
+        MyMergedAnnotations annotations = MyMergedAnnotations.from(ao);
+        for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
+            MyMergedAnnotation<?> annotation = annotations.get(type);
+            if (annotation.isPresent()) {
+                return annotation;
             }
         }
         return null;
-    }
-
-//    private boolean isCandidateClass(Class<?> clazz, Collection<Class<? extends Annotation>> annotationTypes){
-//        for (Class<? extends Annotation> annotationType : annotationTypes) {
-//            String annotationName=annotationType.getName();
-//            if (annotationName.startsWith("java.")) {
-//                return true;
-//            }
-//            if (clazz.getName().startsWith("java.")) {
-//                return false;
-//            }
-//            return true;
-//        }
-//        return false;
-//    }
-
-    public static void main(String[] args) throws Exception {
-//        MyAutowiredProcessor processor=new MyAutowiredProcessor();
-//        MyBeanFactory beanFactory=new MyBeanFactory();
-//        Class<?> clazz = People.class;
-//        Constructor<?> constructorToUse = clazz.getDeclaredConstructor();
-//        People bean=(People) constructorToUse.newInstance();
-//        processor.buildAutowiringMetadata(clazz,bean);
-//        System.out.println(bean.name);
-
-
     }
 }

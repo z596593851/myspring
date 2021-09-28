@@ -33,12 +33,7 @@ public class MyLifecycleProcessor {
         Map<String, MyLifecycle> beans = new LinkedHashMap<>();
         String[] beanNames = beanFactory.getBeanNamesForType(MyLifecycle.class, false);
         for (String beanName : beanNames) {
-            Object bean = null;
-            try {
-                bean = beanFactory.getBean(beanName);
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
+            Object bean = beanFactory.getBean(beanName);
             if (bean != this && bean instanceof MyLifecycle) {
                 beans.put(beanName, (MyLifecycle) bean);
             }
@@ -48,7 +43,7 @@ public class MyLifecycleProcessor {
 
 
 
-    private class MyLifecycleGroup {
+    private static class MyLifecycleGroup {
         private final int phase;
         private final Map<String, ? extends MyLifecycle> lifecycleBeans;
         private final List<MyLifecycleGroupMember> members = new ArrayList<>();
@@ -59,7 +54,7 @@ public class MyLifecycleProcessor {
         }
 
         public void add(String name, MyLifecycle bean){
-            this.members.add(new MyLifecycleGroupMember(name,bean));
+            this.members.add(new MyLifecycleGroupMember(name, bean));
         }
 
         public void start() {
@@ -77,7 +72,7 @@ public class MyLifecycleProcessor {
 
     }
 
-    private class MyLifecycleGroupMember implements Comparable<MyLifecycleGroupMember> {
+    private static class MyLifecycleGroupMember implements Comparable<MyLifecycleGroupMember> {
         private final String name;
 
         private final MyLifecycle bean;

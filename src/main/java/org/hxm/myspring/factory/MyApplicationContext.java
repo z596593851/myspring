@@ -1,6 +1,8 @@
 package org.hxm.myspring.factory;
 
+import org.hxm.myspring.postprocessor.MyAutowiredProcessor;
 import org.hxm.myspring.postprocessor.MyBeanFactoryPostProcessor;
+import org.hxm.myspring.postprocessor.MyBeanPostProcessor;
 import org.hxm.myspring.utils.MyClassUtil;
 import org.hxm.myspring.web.MyServletContextInitializer;
 import org.hxm.myspring.web.MyServletContextInitializerBeans;
@@ -9,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.web.context.WebApplicationContext;
-import sun.tools.native2ascii.Main;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.util.Collection;
@@ -17,15 +19,18 @@ import java.util.List;
 
 public class MyApplicationContext implements MyBeanDefinitionRegistry {
     Logger logger= LoggerFactory.getLogger(MyApplicationContext.class);
+    public static final String AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME =
+            "org.hxm.myspring.postprocessor.internalAutowiredAnnotationProcessor";
 
-    private MyScanner scanner;
+    private final MyScanner scanner;
     private volatile MyTomcatWebServer webServer;
     private MyLifecycleProcessor lifecycleProcessor;
-    private MyBeanFactory beanFactory=new MyBeanFactory();
+    private final MyBeanFactory beanFactory=new MyBeanFactory();
     private ServletContext servletContext;
 
 
     public MyApplicationContext(){
+        registerAnnotationConfigProcessors();
         this.scanner=new MyScanner(this);
     }
 
@@ -46,23 +51,49 @@ public class MyApplicationContext implements MyBeanDefinitionRegistry {
     }
 
     public void refresh(){
-        //扫描标注了@MyBean的类(方法)为BeanDefinition
-        //扫描Import
-        invokeBeanFactoryPostProcessors(beanFactory);
+        try {
+            /*
+                执行所有BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry
+                BeanDefinitionRegistryPostProcessor是BeanFactoryPostProcessor的子接口，先于后者执行
+                其中MyConfigurationClassPostProcessor用来解析@Configuration、@Component 、@ComponentScan 、@Import
+                并注册到Beandefination中
+             */
+            invokeBeanFactoryPostProcessors(beanFactory);
 
-        // Initialize other special beans in specific context subclasses.
-        onRefresh();
+            /*
+                注册BeanPostProcessor,
+                其中一种AutowiredAnnotationBeanPostProcessor用来解析@Autowired、@Value 、@Inject完成自动注入
+             */
+            registerBeanPostProcessors(beanFactory);
 
-        //根据BeanDefinition创建实例和属性注入
-        finishBeanFactoryInitialization(beanFactory);
+            // 子类扩展刷新，如创建tomcat容器
+            onRefresh();
 
-        // Last step: publish corresponding event.
-        finishRefresh();
+            //根据BeanDefinition创建实例和属性注入
+            finishBeanFactoryInitialization(beanFactory);
+
+            finishRefresh();
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
 
     }
 
+    private void registerBeanPostProcessors(MyBeanFactory beanFactory) {
+        String[] postProcessorNames = beanFactory.getBeanNamesForType(MyBeanPostProcessor.class, false);
+        for(String ppName:postProcessorNames){
+            MyBeanPostProcessor beanPostProcessor=(MyBeanPostProcessor)beanFactory.getBean(ppName);
+            beanFactory.addBeanPostProcessor(beanPostProcessor);
+        }
+    }
+
+    private void registerAnnotationConfigProcessors(){
+        MyBeanDefinition def=new MyBeanDefinition(MyAutowiredProcessor.class);
+        registerBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME,def);
+    }
+
     private void finishRefresh() {
-        // Initialize lifecycle processor for this context.
+        //从IOC容器中找出所有的 Lifecycle 类型的Bean，遍历回调 start 方法
         initLifecycleProcessor();
         getLifecycleProcessor().onRefresh();
     }
@@ -77,35 +108,34 @@ public class MyApplicationContext implements MyBeanDefinitionRegistry {
         this.lifecycleProcessor=defaultProcessor;
     }
 
-    private void onRefresh() {
+    private void onRefresh() throws Exception {
         createWebServer();
     }
 
-    private void createWebServer() {
+    private void createWebServer() throws Exception {
         MyTomcatWebServer webServer=this.webServer;
         if(webServer==null){
             MyTomcatServletWebServerFactory factory=new MyTomcatServletWebServerFactory();
-            //todo 注册myServletRegistrationBean
-            try {
-                beanFactory.getBean("myServletRegistrationBean");
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
+            //加载通过spi注册的MyDispatcherServletRegistrationConfiguration
+            beanFactory.getBean("myServletRegistrationBean");
             this.webServer=factory.getWebServer(getSelfInitializer());
-            //todo 注册bean
+            //向容器中注入Lifecycle类型的bean，在 finishRefresh 时调用
             beanFactory.registerSingleton("webServerStartStop",
                     new MyWebServerStartStopLifecycle(this,this.webServer));
         }
     }
 
+    /**
+     * 返回一个 MyServletContextInitializer.onStartup 的函数引用
+     * selfInitialize相当于 MyServletContextInitializer 的匿名实现类
+     */
     private MyServletContextInitializer getSelfInitializer() {
         return this::selfInitialize;
     }
 
     private void selfInitialize(ServletContext servletContext) throws ServletException {
         prepareWebApplicationContext(servletContext);
-//        registerApplicationScope(servletContext);
-        MyClassUtil.registerEnvironmentBeans(beanFactory, servletContext,null);
+        MyClassUtil.registerEnvironmentBeans(beanFactory, servletContext);
         for (MyServletContextInitializer beans : getServletContextInitializerBeans()) {
             beans.onStartup(servletContext);
         }
@@ -142,18 +172,18 @@ public class MyApplicationContext implements MyBeanDefinitionRegistry {
     }
 
     protected void finishBeanFactoryInitialization(MyBeanFactory beanFactory){
-        try {
-            beanFactory.preInstantiateSingletons();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        beanFactory.preInstantiateSingletons();
     }
 
     protected void invokeBeanFactoryPostProcessors(MyBeanFactory beanFactory){
         List<MyBeanFactoryPostProcessor> currentRegistryProcessors=beanFactory.getBeanFactoryPostProcessor();
-        //解析@MyConfiguration和@MyBean
+        /*
+            执行BeanDefinitionRegistryPostProcessor
+            其中MyConfigurationClassPostProcessor用来解析@Configuration、@Component 、@ComponentScan 、@Import
+            并注册到Beandefination中
+         */
         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors,beanFactory);
-        beanFactory.getBeanNamesForType(Main.class,false);
+//        beanFactory.getBeanNamesForType(Main.class,false);
 
 
     }

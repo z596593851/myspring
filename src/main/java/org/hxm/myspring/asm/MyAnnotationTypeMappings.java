@@ -8,7 +8,7 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * 一个注解里的子注解的{@link MyAnnotationTypeMapping}
+ * 一个注解及其子注解的{@link MyAnnotationTypeMapping}
  */
 public class MyAnnotationTypeMappings {
 
@@ -21,6 +21,9 @@ public class MyAnnotationTypeMappings {
         addAllMappings(annotationType);
     }
 
+    /**
+     * 递归获取注解及其子注解，以及他们的元信息
+     */
     private void addAllMappings(Class<? extends Annotation> annotationType) {
         Deque<MyAnnotationTypeMapping> queue = new ArrayDeque<>();
         queue.addLast(new MyAnnotationTypeMapping(null, annotationType, null));
