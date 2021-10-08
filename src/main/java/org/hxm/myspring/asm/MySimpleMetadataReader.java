@@ -2,8 +2,6 @@ package org.hxm.myspring.asm;
 
 import org.springframework.asm.ClassReader;
 import org.springframework.core.io.Resource;
-
-
 import java.io.IOException;
 
 public class MySimpleMetadataReader {

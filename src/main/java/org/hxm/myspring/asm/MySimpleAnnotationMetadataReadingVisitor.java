@@ -1,14 +1,11 @@
 package org.hxm.myspring.asm;
 
-
-
 import org.springframework.asm.*;
 import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 
 public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
@@ -22,17 +19,17 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
     private String[] interfaceNames = new String[0];
 
-    private String enclosingClassName;
+    private final Set<String> memberClassNames = new LinkedHashSet<>(4);
 
-    private boolean independentInnerClass;
+    /**
+     * 一个类上标注的所有注解
+     */
+    private final List<MyMergedAnnotation<?>> annotations = new ArrayList<>();
 
-    private Set<String> memberClassNames = new LinkedHashSet<>(4);
-
-    //一个类上标注的所有注解
-    private List<MyMergedAnnotation<?>> annotations = new ArrayList<>();
-
-    //一个类里所有方法上的注解
-    private List<MySimpleMethodMetadata> annotatedMethods = new ArrayList<>();
+    /**
+     * 一个类里所有方法上的注解
+     */
+    private final List<MySimpleMethodMetadata> annotatedMethods = new ArrayList<>();
 
     private Source source;
 
@@ -82,8 +79,7 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
         if (isBridge(access)) {
             return null;
         }
-        return new MyMethodVisitor(this.classLoader, this.className,
-                access, name, descriptor, this.annotatedMethods::add);
+        return new MyMethodVisitor(this.classLoader, this.className, access, name, descriptor, this.annotatedMethods::add);
     }
 
     @Override
@@ -92,8 +88,7 @@ public class MySimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
         MyMethodMetadata[] annotatedMethods = this.annotatedMethods.toArray(new MyMethodMetadata[0]);
         MyMergedAnnotations annotations = MyMergedAnnotationsCollection.of(this.annotations);
         this.metadata = new MySimpleAnnotationMetadata(this.className, this.access,
-                this.enclosingClassName, this.superClassName, this.independentInnerClass,
-                this.interfaceNames, memberClassNames, annotations, annotatedMethods);
+                this.superClassName, this.interfaceNames, memberClassNames, annotations, annotatedMethods);
     }
 
     private boolean isBridge(int access) {

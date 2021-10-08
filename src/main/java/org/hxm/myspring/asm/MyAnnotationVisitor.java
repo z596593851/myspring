@@ -7,7 +7,6 @@ import org.springframework.asm.AnnotationVisitor;
 import org.springframework.asm.SpringAsmInfo;
 import org.springframework.asm.Type;
 import org.springframework.util.ClassUtils;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ public class MyAnnotationVisitor<A extends Annotation> extends AnnotationVisitor
 
     private final Consumer<MyMergedAnnotation<A>> consumer;
 
-    //一个注解的所有key-value
     private final Map<String, Object> attributes = new LinkedHashMap<>(4);
 
 

@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * 以MyMergedAnnotation数组的形式来存放以asm方式收集的一个类（or成员or方法）上的所有注解
  * A Collection of MergedAnnotation instances that represent direct annotations.
  */
 public class MyMergedAnnotationsCollection implements MyMergedAnnotations{

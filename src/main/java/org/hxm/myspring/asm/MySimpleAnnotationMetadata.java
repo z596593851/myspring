@@ -13,11 +13,7 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
 
     private final int access;
 
-    private final String enclosingClassName;
-
     private final String superClassName;
-
-    private final boolean independentInnerClass;
 
     private final String[] interfaceNames;
 
@@ -28,14 +24,12 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
     private final MyMethodMetadata[] annotatedMethods;
 
 
-    public MySimpleAnnotationMetadata(String className, int access, String enclosingClassName,
-                                      String superClassName, boolean independentInnerClass, String[] interfaceNames,
+    public MySimpleAnnotationMetadata(String className, int access,
+                                      String superClassName, String[] interfaceNames,
                                       String[] memberClassNames, MyMergedAnnotations annotations, MyMethodMetadata[] annotatedMethods){
         this.className = className;
         this.access = access;
-        this.enclosingClassName = enclosingClassName;
         this.superClassName = superClassName;
-        this.independentInnerClass = independentInnerClass;
         this.interfaceNames = interfaceNames;
         this.memberClassNames = memberClassNames;
         this.annotations = annotations;
@@ -94,14 +88,17 @@ public class MySimpleAnnotationMetadata implements MyAnnotationMetadata{
     public boolean isFinal() {
         return (this.access & Opcodes.ACC_FINAL) != 0;
     }
+
     @Override
     public boolean isIndependent() {
-        return (this.enclosingClassName == null || this.independentInnerClass);
+        return false;
     }
+
     @Override
     public String getEnclosingClassName() {
-        return this.enclosingClassName;
+        return null;
     }
+
     @Override
     public String getSuperClassName() {
         return this.superClassName;
