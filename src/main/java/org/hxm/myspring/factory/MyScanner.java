@@ -52,9 +52,8 @@ public class MyScanner {
         try {
             ClassLoader cl = MyClassUtil.getDefaultClassLoader();
             basePackage=basePackage.replace(".","/")+"/";
-            Enumeration<URL> resourceUrls = (cl != null ? cl.getResources(basePackage) : ClassLoader.getSystemResources(basePackage));
-            Resource rootDirResource= new UrlResource(resourceUrls.nextElement());
-            File rootDir=rootDirResource.getFile().getAbsoluteFile();
+            URL url=cl.getResource(basePackage);
+            File rootDir=new File(url.getFile());
             List<File> fileList=new ArrayList<>();
             listDirectory(rootDir,fileList);
             List<Resource> resources= fileList.stream().map(FileSystemResource::new).collect(Collectors.toList());
